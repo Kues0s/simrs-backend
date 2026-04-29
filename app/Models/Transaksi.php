@@ -31,8 +31,8 @@ class Transaksi extends Model
         'diskon' => 'decimal:1',
         'pajak' => 'decimal:1',
         'total_akhir' => 'decimal:1',
-        'status' => 'enum:menunggu,selesai,batal',
+        'status' => 'string',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'update_at' => 'datetime',
     ];
 }
