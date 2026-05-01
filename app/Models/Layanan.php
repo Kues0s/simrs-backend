@@ -21,4 +21,10 @@ class Layanan extends Model
     protected $cast = [
         'harga' => 'decimal:1',
     ];
+
+    // Relasi ke detail transaksi
+    public function detailTransaksi()
+    {
+        return $this->hasMany(DetailTransaksi::class, 'id_layanan', 'id_layanan');
+    }
 }

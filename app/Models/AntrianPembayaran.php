@@ -21,4 +21,9 @@ class AntrianPembayaran extends Model
     protected $casts = [
         'waktu_masuk' => 'datetime',
     ];
+
+    public function transaksi()
+    {
+        return $this->belongsTo(Transaksi::class, 'id_transaksi', 'id_transaksi');
+    }
 }

@@ -35,4 +35,21 @@ class Transaksi extends Model
         'created_at' => 'datetime',
         'update_at' => 'datetime',
     ];
+
+    // Relasi ke detail transaksi
+    public function detailTransaksi()
+    {
+        return $this->hasMany(DetailTransaksi::class, 'id_transaksi', 'id_transaksi');
+    }
+
+    // Relasi ke pembayaran
+    public function pembayaran()
+    {
+        return $this->hasOne(Pembayaran::class, 'id_transaksi', 'id_transaksi');
+    }
+
+    public function antrianPembayaran()
+    {
+        return $this->hasOne(AntrianPembayaran::class, 'id_transaksi', 'id_transaksi');
+    }
 }

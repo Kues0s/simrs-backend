@@ -21,4 +21,10 @@ class Pembayaran extends Model
         'jumlah_pembayaran' => 'decimal:2',
         'tanggal_pembayaran' => 'datetime',
     ];
+
+    // Relasi ke transaksi
+    public function transaksi()
+    {
+        return $this->belongsTo(Transaksi::class, 'id_transaksi', 'id_transaksi');
+    }
 }

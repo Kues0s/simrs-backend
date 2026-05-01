@@ -30,4 +30,17 @@ class DetailTransaksi extends Model
         'total' => 'decimal:1',
         'keterangan' => 'string',
     ];
+
+    // Relasi ke transaksi
+    public function transaksi()
+    {
+        return $this->belongsTo(Transaksi::class, 'id_transaksi', 'id_transaksi');
+    }
+
+    // Relasi ke layanan
+    public function layanan()
+    {
+        return $this->belongsTo(Layanan::class, 'id_layanan', 'id_layanan');
+    }
+
 }
