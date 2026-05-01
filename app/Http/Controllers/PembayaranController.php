@@ -78,7 +78,7 @@ class PembayaranController extends Controller
      */
     public function update(Request $request, Pembayaran $id_pembayaran)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'id_transaksi' => 'sometimes|required|integer',
             'metode' => 'sometimes|required|in:cash, debit, transfer',
             'jumlah_pembayaran' => 'sometimes|required|numeric',
@@ -86,7 +86,7 @@ class PembayaranController extends Controller
         ]);
 
         try {
-            $id_pembayaran->update($request->all());
+            $id_pembayaran->update($validatedData);
             return response()->json([
                 'success' => true,
                 'message' => 'Data pembayaran berhasil diupdate',

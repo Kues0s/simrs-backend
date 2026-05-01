@@ -86,7 +86,7 @@ class LayananController extends Controller
                 'harga' => 'sometimes|required|numeric',
                 'status_layanan' => 'sometimes|required|in:aktif,nonaktif',
             ]);
-            $id_layanan->update($request->all());
+            $id_layanan->update($validatedData);
             return response()->json([
                 'success' => true,
                 'message' => 'Data layanan berhasil diupdate',

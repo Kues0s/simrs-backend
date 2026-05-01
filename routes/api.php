@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AntrianPembayaranController;
 use App\Http\Controllers\LayananController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\TransaksiController;
@@ -28,3 +29,10 @@ Route::post('/pembayaran', [PembayaranController::class, 'store']);
 Route::get('/pembayaran/{id_pembayaran}', [PembayaranController::class, 'show']);
 Route::put('/pembayaran/{id_pembayaran}', [PembayaranController::class, 'update']);
 Route::delete('/pembayaran/{id_pembayaran}', [PembayaranController::class, 'destroy']);
+
+//API Antrian_Pembayaran
+Route::get('/antrian_pembayaran', [AntrianPembayaranController::class, 'index']);
+Route::post('/antrian_pembayaran', [AntrianPembayaranController::class, 'store']);
+Route::get('/antrian_pembayaran/{id_antrian_pay}', [AntrianPembayaranController::class, 'show']);
+Route::put('/antrian_pembayaran/{id_antrian_pay}', [AntrianPembayaranController::class, 'update']);
+Route::delete('/antrian_pembayaran/{id_antrian_pay}', [AntrianPembayaranController::class, 'destroy']);
