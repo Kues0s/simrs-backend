@@ -8,11 +8,23 @@ use Illuminate\Http\Request;
 class DetailTransaksiLayananController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Menampilkan List Detail Transaksi Layanan.
      */
     public function index()
     {
-        //
+        try{
+            $data = DetailTransaksiLayanan::orderBy('id_detail_layanan', 'desc')->get();
+            return response()->json([
+                'succes' => true,
+                'message' => 'Data transaksi layanan berhasil dimuat',
+                'data' => $data,
+            ], 200);
+        }catch(\Exception $e){
+            return response()->json([
+                'error' => 'Terdapat Kesalahan',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

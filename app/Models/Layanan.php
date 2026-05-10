@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\DetailTransaksiLayanan;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -25,6 +26,6 @@ class Layanan extends Model
     // Relasi ke detail transaksi
     public function detailTransaksi()
     {
-        return $this->hasMany(DetailTransaksi::class, 'id_layanan', 'id_layanan');
+        return $this->hasMany(DetailTransaksiLayanan::class, 'id_layanan', 'id_layanan');
     }
 }

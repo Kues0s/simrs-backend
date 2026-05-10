@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+
 class Transaksi extends Model
 {
     protected $table = 'transaksi';
@@ -27,9 +28,9 @@ class Transaksi extends Model
     ];
 
     // Relasi ke detail transaksi
-    public function detailTransaksi()
+    public function detailTransaksiLayanan()
     {
-        return $this->hasMany(DetailTransaksi::class, 'id_transaksi', 'id_transaksi');
+        return $this->hasMany(DetailTransaksiLayanan::class, 'id_transaksi', 'id_transaksi');
     }
 
     // Relasi ke pembayaran
