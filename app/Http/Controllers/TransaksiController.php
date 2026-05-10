@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 class TransaksiController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Menampilkan List Data Transaksi.
      */
     public function index()
     {
@@ -31,7 +31,7 @@ class TransaksiController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Menambahkan Data Transaksi Baru.
      */
     public function store(Request $request)
     {
@@ -69,7 +69,6 @@ class TransaksiController extends Controller
                 'id_rm'       => $validated['id_rm'] ?? null,
                 'id_resep'    => $validated['id_resep'] ?? null,
                 'tanggal'     => $validated['tanggal'],
-                'subtotal'    => $validated['subtotal'],
                 'status'      => $validated['status'],
             ]);
 
@@ -102,7 +101,7 @@ class TransaksiController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Menampilkan Data Transaksi Tertentu
      */
     public function show(String $id_transaksi)
     {
@@ -146,7 +145,7 @@ class TransaksiController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Memperbaharui Data Transaksi Berdasarkan id_transaksi
      */
     public function update(Request $request, String $id_transaksi)
     {
@@ -238,7 +237,7 @@ class TransaksiController extends Controller
 
 
     /**
-     * Remove the specified resource from storage.
+     * Menghapus Data Transaksi
      */
     public function destroy(Transaksi $transaksi)
     {
