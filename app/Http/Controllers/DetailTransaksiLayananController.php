@@ -13,7 +13,10 @@ class DetailTransaksiLayananController extends Controller
     public function index()
     {
         try{
+            //Query Menampilkan Data berdasar kan id_detail_layanan terbesar
             $data = DetailTransaksiLayanan::orderBy('id_detail_layanan', 'desc')->get();
+
+            //Return Response dalam bentuk json
             return response()->json([
                 'succes' => true,
                 'message' => 'Data transaksi layanan berhasil dimuat',
@@ -28,34 +31,104 @@ class DetailTransaksiLayananController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Menambahkan Data Transakasi Layanan 
      */
     public function store(Request $request)
     {
-        //
+        //Validasi Data
+        $validateData = $request->validate([
+            'id_layanan' => 'required|integer',
+            'id_transaksi' => 'required|integer',
+            'jumlah_layanan' => 'required|integer',
+        ]);
+
+        //Simpan Data
+        $data = DetailTransaksiLayanan::create($validateData);
+
+        //return response dalam bentuk json
+        return response()->json([
+            'succes' => true,
+            'message' => 'Data berhasil disimpan',
+            'data' => $data,
+        ],201);
     }
 
     /**
-     * Display the specified resource.
+     * Menampilkan Detail_transaksi_layanan tertentu
      */
     public function show(DetailTransaksiLayanan $detailTransaksiLayanan)
     {
-        //
+        //Cari data berdasarkan id
+        $data = DetailTransaksiLayanan::find($detailTransaksiLayanan);
+
+        //Jika tidak ada data
+        if(!$data){
+            return response()->json([
+                'success' => false,
+                'message' => 'Data tidak ditemukan',
+        ], 404);
+        }
+
+        //jika data ada
+        return response()->json([
+            'succes' => true,
+            'message' => 'Berhasil memuat data berdasarkan id',
+            'data' => $data,
+        ], 200);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Data_transaksi_layanan
      */
     public function update(Request $request, DetailTransaksiLayanan $detailTransaksiLayanan)
     {
-        //
+        // 1. Mencari data dulu berdasarkan ID
+        $data = DetailTransaksiLayanan::find($id);
+
+        // jika data tidak ada
+        if (!$data) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data tidak ditemukan',
+            ], 404);
+        }
+
+        // 2. Validasi data yang di request
+        $validatedData = $request->validate([
+            'id_layanan'     => 'required|integer',
+            'id_transaksi'   => 'required|integer',
+            'jumlah_layanan' => 'required|integer',
+        ]);
+
+        // 3. Update data ke database
+        $data->update($validatedData);
+
+        // 4. Kembalikan response sukses
+        return response()->json([
+            'success' => true,
+            'message' => 'Data detail transaksi berhasil diupdate',
+            'data'    => $data
+        ]);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Menghapus Berdasarkan id_detail_layanan
      */
     public function destroy(DetailTransaksiLayanan $detailTransaksiLayanan)
     {
-        //
+        $data = DetailTransaksiLayanan::find($detailTransaksiLayanan);
+
+        if(!data){
+            return response()->json([
+                'succes' => false,
+                'message' => 'Data tidak ditemukan',
+            ],404);
+        }
+
+        $data->delete();
+        return response()->json([
+            'succes' => true,
+            'message' => 'Data berhasil dihapus',
+        ],);
     }
 }
