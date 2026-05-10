@@ -8,42 +8,104 @@ use Illuminate\Http\Request;
 class DetailTransaksiObatController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Menampilkan LIst Transaksi Obat
      */
     public function index()
     {
-        //
+        $data = DetailTransaksiObat::orderBy('id_detail_obat', 'desc')->get();
+        return response()->json([
+            'succes' => true,
+            'message' => 'Data Transkasi Obat berhasil ditemukan',
+            'data' => $data,
+        ], 200);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Menamabhkan data transaksi obat.
      */
     public function store(Request $request)
     {
-        //
+        $validateData = $request->validate([
+            'id_obat' => 'required|integer',
+            'id_transaksi' => 'required|integer',
+            'jumlah_obat' => 'required|integer',
+        ]);
+
+        $data = DetailTransaksiObat::create($validateData);
+
+        return response()->json([
+            'succes' => true,
+            'message' => 'Data berhasil ditambahkan',
+            'data' => $data,
+        ],201);
+
     }
 
     /**
-     * Display the specified resource.
+     * Menampilkan Data Transaksi Obat tertentu.
      */
     public function show(DetailTransaksiObat $detailTransaksiObat)
     {
-        //
+        $data = DetailTransaksiObat::find($detailTransaksiObat);
+        if(!$data){
+            return response()->json([
+                'succes' => false,
+                'message' => 'Data tidak ditemukan', 
+            ],404);
+        }
+
+        return response()->json([
+            'succes' => true,
+            'message' => 'Data ditemukan',
+            'data' => $data,
+        ],200);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update data Transaksi_layanan.
      */
     public function update(Request $request, DetailTransaksiObat $detailTransaksiObat)
     {
-        //
+        $data = DetailTransaksiObat::find($detailTransaksiObat);
+        if(!$data){
+            return response()->json([
+                'succes' => false,
+                'message' => 'Data tidak ditemukan!',
+            ],404);
+        }
+
+        $validateData = $request->validate([
+            'id_obat' => 'required|integer',
+            'id_transaksi' => 'required|integer',
+            'jumlah_obat' => 'required|integer',
+        ]);
+
+        $data->update($validateData);
+
+        return response()->json([
+            'succes' => true,
+            'message' => 'Data berhasil diperbaharui',
+            'data' => $data,
+        ]);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Menghapus Data Transaksai Obat.
      */
     public function destroy(DetailTransaksiObat $detailTransaksiObat)
     {
-        //
+        $data = DetailTransaksiObat::find($detailTransaksiObat);
+        if(!$data){
+            return response()->json([
+                'succes' => false,
+                'message' => 'Data tidak ditemukan!',
+            ],404);
+        }
+        $data->delete();
+        return response()->json([
+            'succes' => true,
+            'message' => 'Data berhasil dihapus!',
+            'data' => $data,
+        ]);
     }
 }

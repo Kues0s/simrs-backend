@@ -83,7 +83,7 @@ class DetailTransaksiLayananController extends Controller
     public function update(Request $request, DetailTransaksiLayanan $detailTransaksiLayanan)
     {
         // 1. Mencari data dulu berdasarkan ID
-        $data = DetailTransaksiLayanan::find($id);
+        $data = DetailTransaksiLayanan::find($detailTransaksiLayanan);
 
         // jika data tidak ada
         if (!$data) {
