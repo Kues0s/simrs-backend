@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 class AntrianPembayaranController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Menampilkan Seluruh Antrian.
      */
     public function index()
     {
@@ -28,7 +28,7 @@ class AntrianPembayaranController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Menambahkan Antrian Baru.
      */
     public function store(Request $request)
     {
@@ -55,7 +55,7 @@ class AntrianPembayaranController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Menampilkan sebuah antrian.
      */
     public function show(AntrianPembayaran $antrianPembayaran)
     {
@@ -75,7 +75,7 @@ class AntrianPembayaranController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Antrian Pemabayaran (digunakan update status antrian).
      */
     public function update(Request $request, AntrianPembayaran $antrianPembayaran)
     {
@@ -103,7 +103,7 @@ class AntrianPembayaranController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Menghapus Antrian berdasarkan id_antrian.
      */
     public function destroy(AntrianPembayaran $antrianPembayaran)
     {

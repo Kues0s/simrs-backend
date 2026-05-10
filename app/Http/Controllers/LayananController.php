@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 class LayananController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Menampilkan Seluruh Layanan.
      */
     public function index()
     {
@@ -28,11 +28,11 @@ class LayananController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Menambahkan Layanan Baru.
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'nama_layanan' => 'required|string',
             'kategori' => 'required|string',
             'harga' => 'required|numeric',
@@ -40,7 +40,23 @@ class LayananController extends Controller
         ]);
 
         try {
-            $layanan = Layanan::create($request->all());
+            $cekUnit = http::timeout(5)
+                ->withToken($request->bearerToken()) // ← pakai token kasir yang login
+                ->get("http://kelompok1.local/api/unit", [
+                    'nama_unit' => $validatedData['kategori']
+                ]);
+            if ($cekUnit->failed() || empty($cekUnit->json('data'))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kategori unit tidak ditemukan di sistem',
+                ], 404);
+            }
+            
+            $dataUnit = $cekUnit->json('data');
+            $idUnit = $dataUnit[0]['id']; // ← ambil id unit
+            $validatedData['kategori'] = $idUnit; // Ganti kategori dengan id unit
+                
+            $layanan = Layanan::create($validatedData);
             return response()->json([
                 'success' => true,
                 'message' => 'Data layanan berhasil dibuat',
@@ -55,7 +71,7 @@ class LayananController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Menampilkan satu buah Layanan .
      */
     public function show($id_layanan)
     {
@@ -75,7 +91,7 @@ class LayananController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Data Layanan Berdasarkan ID_layanan.
      */
     public function update(Request $request, Layanan $id_layanan)
     {
@@ -101,7 +117,7 @@ class LayananController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Menghapus Layanan.
      */
     public function destroy(Layanan $id_layanan)
     {

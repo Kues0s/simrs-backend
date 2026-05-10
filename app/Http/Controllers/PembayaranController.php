@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 class PembayaranController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Menampilkan List Transaksi.
      */
     public function index()
     {
@@ -28,7 +28,7 @@ class PembayaranController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Menyimpan Transaksi Baru
      */
     public function store(Request $request)
     {
@@ -55,7 +55,7 @@ class PembayaranController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Menampilkan Detail_transaksi
      */
     public function show(Pembayaran $id_pembayaran)
     {
@@ -74,7 +74,7 @@ class PembayaranController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * .
      */
     public function update(Request $request, Pembayaran $id_pembayaran)
     {

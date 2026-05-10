@@ -37,15 +37,11 @@ class TransaksiController extends Controller
     {
         try{
             $validated = $request->validate([
-                'nik' => 'required|string|max:16',
+                'pasien_id' => 'required|integer',
                 'id_antrian' => 'required|integer',
                 'id_rm' => 'nullable|integer',
                 'id_resep' => 'nullable|integer',
                 'tanggal' => 'required|date',
-                'subtotal' => 'required|numeric|min:0',
-                'diskon' => 'required|numeric|min:0',
-                'pajak' => 'required|numeric|min:0',
-                'total_akhir' => 'required|numeric|min:0',
                 'status' => 'required|in:menunggu,selesai,batal',
             ]);
 
@@ -53,32 +49,27 @@ class TransaksiController extends Controller
             $cekPasien = Http::timeout(5)
                 ->withToken($request->bearerToken()) // ← pakai token kasir yang login
                 ->get("http://kelompok1.local/api/pasien", [
-                    'nik' => $validated['nik']
+                    'pasien_id' => $validated['pasien_id']
                 ]);
 
             if ($cekPasien->failed() || empty($cekPasien->json('data'))) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'NIK tidak ditemukan di sistem',
+                    'message' => 'Pasien_id tidak ditemukan di sistem',
                 ], 404);
             }
 
-             // LANGKAH 3: Ambil id_pengguna dari response
             $dataPasien = $cekPasien->json('data');
-            $idPengguna = $dataPasien[0]['id']; // ← ambil id pasien
 
            // LANGKAH 4: Simpan ke DB
             $transaksi = Transaksi::create([
-                'id_pengguna' => $idPengguna,
+                'pasien_id'   => $validated['pasien_id'],
                 'nik'         => $validated['nik'],
                 'id_antrian'  => $validated['id_antrian'],
                 'id_rm'       => $validated['id_rm'] ?? null,
                 'id_resep'    => $validated['id_resep'] ?? null,
                 'tanggal'     => $validated['tanggal'],
                 'subtotal'    => $validated['subtotal'],
-                'diskon'      => $validated['diskon'] ?? 0,
-                'pajak'       => $validated['pajak'] ?? 0,
-                'total_akhir' => $validated['total_akhir'],
                 'status'      => $validated['status'],
             ]);
 

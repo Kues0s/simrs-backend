@@ -8,32 +8,22 @@ class Transaksi extends Model
 {
     protected $table = 'transaksi';
     protected $primaryKey = 'id_transaksi';
-    const UPDATED_AT = 'update_at';
     protected $fillable = [
-        'id_pengguna', 
-        'nik', 
+        'pasien_id', 
         'id_antrian',
         'id_rm',
         'id_resep',
         'tanggal',
-        'subtotal',
-        'diskon',
-        'pajak',
-        'total_akhir',
         'status'];
+
     protected $casts = [
-        'id_pengguna' => 'integer',
+        'pasien_id' => 'integer',
         'id_antrian' => 'integer',
         'id_rm' => 'integer',
         'id_resep' => 'integer',
         'tanggal' => 'datetime',
         'subtotal' => 'decimal:1',
-        'diskon' => 'decimal:1',
-        'pajak' => 'decimal:1',
-        'total_akhir' => 'decimal:1',
         'status' => 'string',
-        'created_at' => 'datetime',
-        'update_at' => 'datetime',
     ];
 
     // Relasi ke detail transaksi
@@ -52,4 +42,13 @@ class Transaksi extends Model
     {
         return $this->hasOne(AntrianPembayaran::class, 'id_transaksi', 'id_transaksi');
     }
+
+    // 1. Menghitung Subtotal Layanan (Harga x Jumlah)
+    public function getSubtotalLayananAttribute()
+    {
+        return $this->detailLayanan->sum(function ($layanan) {
+            return $layanan->harga * $layanan->jumlah;
+        });
+    }
+    
 }
