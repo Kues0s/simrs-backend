@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 
 
 //API Transaksi
+Route::get('/transaksi/jumlah-transaksi', [TransaksiController::class, 'jumlahTransaksi']);
 Route::apiResource('transaksi',TransaksiController::class)
 ->parameters(['transaksi' => 'id_transaksi']);
 

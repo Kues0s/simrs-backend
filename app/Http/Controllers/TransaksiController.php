@@ -6,6 +6,7 @@ use App\Models\Transaksi;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Carbon\Carbon;
 
 class TransaksiController extends Controller
 {
@@ -270,5 +271,31 @@ class TransaksiController extends Controller
                 'error'   => $e->getMessage(),
             ], 500);
         }
+    }
+
+
+    /**
+     * Jumlah transaksi Perbulan
+     */
+   public function jumlahTransaksi()
+    {
+        // Hitung transaksi hari ini
+        $hariIni = Transaksi::whereDate('tanggal', Carbon::today())->count();
+
+        // Hitung transaksi bulan ini
+        $bulanIni = Transaksi::whereMonth('tanggal', Carbon::now()->month)
+                            ->whereYear('tanggal', Carbon::now()->year)
+                            ->count();
+
+        // Gabungkan dalam satu response JSON
+        return response()->json([
+            'success' => true,
+            'message' => 'Statistik Jumlah Transaksi',
+            'data' => [
+                'total_hari_ini'  => $hariIni,
+                'total_bulan_ini' => $bulanIni,
+                // Kamu bisa tambah total_tahun_ini atau total_semua di sini nanti
+            ]
+        ]);
     }
 }
