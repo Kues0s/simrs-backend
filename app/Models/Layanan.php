@@ -14,14 +14,14 @@ class Layanan extends Model
 
     protected $fillable = [
         'nama_layanan',
-        'kategori',
         'tarif_dokter',
         'tarif_perawat',
         'status_layanan',
     ];
     
     protected $cast = [
-        'harga' => 'decimal:1',
+        'tarif_dokter' => 'decimal:1',
+        'tarif_perawat' => 'decimal:1',
     ];
 
     public function detailTransaksiLayanan()
