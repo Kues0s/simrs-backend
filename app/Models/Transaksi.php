@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\AntrianPembayaran;
 use App\Models\DetailTransaksiLayanan;
 use App\Models\Pembayaran;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\AntrianPembayaran;
 
 
 class Transaksi extends Model
 {
+    use HasFactory;
     protected $table = 'transaksi';
     protected $primaryKey = 'id_transaksi';
     protected $fillable = [

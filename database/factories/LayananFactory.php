@@ -17,11 +17,22 @@ class LayananFactory extends Factory
      */
     public function definition(): array
     {
+        $layanan = [
+            'Konsultasi Umum',
+            'Konsultasi Spesialis',
+            'Rawat Inap',
+            'Rawat Jalan',
+            'Tindakan Medis',
+            'Laboratorium',
+            'Radiologi',
+            'Fisioterapi',
+        ];
+
         return [
-            'nama_layanan' => $this->faker->randomElement(['Tambal Gigi', 'Cabut Gigi', 'Pembersihan Karang', 'Pasang Behel', 'Pemeriksaan Gigi', 'Pemutihan Gigi', 'Perawatan Saluran Akar', 'Pembuatan Gigi Palsu', 'Pemasangan Crown', 'Pemasangan Implan']),
-            'kategori' => 'Gigi',
-            'harga' => $this->faker->randomFloat(1, 50000, 1000000), // Harga antara 50rb - 1JT
-            'status_layanan' => 'aktif', // Kamu bisa pakai enum di sini jika sudah didefinisikan
+            'nama_layanan'   => $this->faker->unique()->randomElement($layanan),
+            'tarif_dokter'   => $this->faker->randomElement([50000, 75000, 100000, 150000, 200000]),
+            'tarif_perawat'  => $this->faker->randomElement([25000, 30000, 40000, 50000]),
+            'status_layanan' => $this->faker->randomElement(['aktif', 'nonaktif']),
         ];
     }
 }

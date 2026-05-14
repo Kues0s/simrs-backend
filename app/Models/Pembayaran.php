@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Models\Transaksi;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Pembayaran extends Model
 {
+    use HasFactory;
     protected $table = 'pembayaran';
     protected $primaryKey = 'id_pembayaran';
     const UPDATED_AT = null;

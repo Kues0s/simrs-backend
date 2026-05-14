@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Models\Transaksi;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class AntrianPembayaran extends Model
 {
+    use HasFactory;
     protected $table = 'antrian_pembayaran';
     protected $primaryKey = 'id_antrian_pay';
     const timestamps = false;

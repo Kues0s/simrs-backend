@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Models\Transaksi;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class DetailTransaksiObat extends Model
 {
+    use HasFactory;
     protected $table = 'd_transaksi_obat';
     protected $primaryKey = 'id_detail_obat';
     public $timestamps = false;
