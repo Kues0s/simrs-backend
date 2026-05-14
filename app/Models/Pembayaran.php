@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Transaksi;
 use Illuminate\Database\Eloquent\Model;
 
 class Pembayaran extends Model
@@ -19,6 +20,7 @@ class Pembayaran extends Model
     ];
 
     protected $casts = [
+        'id_transaksi' => 'integer',
         'jumlah_pembayaran' => 'decimal:1',
         'tanggal_pembayaran' => 'datetime',
     ];

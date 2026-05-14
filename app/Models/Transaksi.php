@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\DetailTransaksiLayanan;
+use App\Models\Pembayaran;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\AntrianPembayaran;
 
 
 class Transaksi extends Model
@@ -23,7 +26,6 @@ class Transaksi extends Model
         'id_rm' => 'integer',
         'id_resep' => 'integer',
         'tanggal' => 'datetime',
-        'subtotal' => 'decimal:1',
         'status' => 'string',
     ];
 
