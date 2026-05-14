@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\AntrianPembayaran;
+use App\Models\Transaksi;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

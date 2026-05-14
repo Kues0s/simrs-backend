@@ -13,6 +13,6 @@ class LayananSeeder extends Seeder
      */
     public function run(): void
     {
-        Layanan::factory()->count(10)->create();
+        Layanan::factory()->count(8)->create();
     }
 }

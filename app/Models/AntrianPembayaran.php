@@ -11,7 +11,7 @@ class AntrianPembayaran extends Model
     use HasFactory;
     protected $table = 'antrian_pembayaran';
     protected $primaryKey = 'id_antrian_pay';
-    const timestamps = false;
+    public $timestamps = false;
 
     protected $fillable = [
         'id_transaksi',

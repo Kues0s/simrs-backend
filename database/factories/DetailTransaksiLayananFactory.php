@@ -3,6 +3,8 @@
 namespace Database\Factories;
 
 use App\Models\DetailTransaksiLayanan;
+use App\Models\Layanan;
+use App\Models\Transaksi;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

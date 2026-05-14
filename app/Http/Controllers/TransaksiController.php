@@ -44,7 +44,7 @@ class TransaksiController extends Controller
                 'id_rm' => 'nullable|integer',
                 'id_resep' => 'nullable|integer',
                 'tanggal' => 'required|date',
-                'status' => 'required|in:menunggu,selesai,batal',
+                'status' => 'required|in:menunggu,selesai',
             ]);
 
             // LANGKAH 2: Verifikasi NIK ke API Kelompok 1
