@@ -2,23 +2,26 @@
 
 namespace App\Models;
 
+use App\Models\Transaksi;
 use Illuminate\Database\Eloquent\Model;
 
 class AntrianPembayaran extends Model
 {
     protected $table = 'antrian_pembayaran';
     protected $primaryKey = 'id_antrian_pay';
-    const CREATED_AT = null;
-    const UPDATED_AT = null;
+    const timestamps = false;
 
     protected $fillable = [
         'id_transaksi',
-        'no_antrian_pay',
+        'no_pembayaran',
         'status_antrian',
         'waktu_masuk',
     ];
 
     protected $casts = [
+        'id_transaksi' => 'integer',
+        'no_pembayaran' => 'integer',
+        'status_antrian' => 'string',
         'waktu_masuk' => 'datetime',
     ];
 
