@@ -19,7 +19,7 @@ class Layanan extends Model
         'status_layanan',
     ];
     
-    protected $cast = [
+    protected $casts = [
         'tarif_dokter' => 'decimal:1',
         'tarif_perawat' => 'decimal:1',
     ];
