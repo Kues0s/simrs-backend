@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Transaksi;
 use Illuminate\Database\Eloquent\Model;
 
 class DetailTransaksiObat extends Model
@@ -14,7 +15,16 @@ class DetailTransaksiObat extends Model
         'id_obat',
         'jumlah_obat',
     ];
-    protected $cast = [
+
+    protected $casts = [
+        'id_transaksi' => 'integer',
+        'id_obat' => 'integer',
         'jumlah_obat' => 'integer',
     ];
+
+    public function transaksi()
+    {
+        return $this->belongsTo(Transaksi::class, 'id_transaksi', 'id_transaksi');
+    }
+
 }
