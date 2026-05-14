@@ -275,7 +275,7 @@ class TransaksiController extends Controller
 
 
     /**
-     * Jumlah transaksi Perbulan
+     * Menampilkan Statistik Transaksi
      */
    public function jumlahTransaksi()
     {

@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 class PembayaranController extends Controller
 {
     /**
-     * Menampilkan List Transaksi.
+     * Menampilkan List Pembayaran
      */
     public function index()
     {
@@ -28,42 +28,52 @@ class PembayaranController extends Controller
     }
 
     /**
-     * Menyimpan Transaksi Baru
+     * Menambahkan Data Pembayaran 
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validateData = $request->validate([
             'id_transaksi' => 'required|integer',
             'metode' => 'required|in:cash, debit, transfer',
             'jumlah_pembayaran' => 'required|numeric',
+            'status_pembayaran' => 'required|in:pending, berhasil, gagal',
             'tanggal_pembayaran' => 'required|date',
         ]);
 
         try {
-            $pembayaran = Pembayaran::create($request->all());
+            $pembayaran = Pembayaran::create($validateData);
             return response()->json([
                 'success' => true,
-                'message' => 'Data pembayaran berhasil dibuat',
+                'message' => 'Data pembayaran berhasil ditambahkan',
                 'data' => $pembayaran,
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Gagal membuat data pembayaran',
+                'error' => 'Gagal menambahkan data pembayaran',
                 'message' => $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Menampilkan Detail_transaksi
+     * Menampilkan Data Pembayaran Tertentu
      */
     public function show(Pembayaran $id_pembayaran)
     {
         try{
+            $data = Pembayaran::find($id_pembayaran);
+
+            if(!$data){
+                return response()->json([
+                    'succes' => false,
+                    'message' => 'Data Pembayaran tidak ditemukan',
+                ],404);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Data pembayaran berhasil diambil',
-                'data' => $id_pembayaran,
+                'data' => $data,
             ], 200);
         }catch(\Exception $e){
             return response()->json([
@@ -74,7 +84,7 @@ class PembayaranController extends Controller
     }
 
     /**
-     * .
+     * Update Data Pembayaran
      */
     public function update(Request $request, Pembayaran $id_pembayaran)
     {
@@ -82,6 +92,7 @@ class PembayaranController extends Controller
             'id_transaksi' => 'sometimes|required|integer',
             'metode' => 'sometimes|required|in:cash, debit, transfer',
             'jumlah_pembayaran' => 'sometimes|required|numeric',
+            'status_pembayaran' => 'sometimes|required|in:pending, berhasil, gagal',
             'tanggal_pembayaran' => 'sometimes|required|date',
         ]);
 
@@ -101,7 +112,7 @@ class PembayaranController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Menghapus Data Pembayaran
      */
     public function destroy(Pembayaran $id_pembayaran)
     {

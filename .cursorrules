@@ -1,0 +1,7 @@
+# General AI Rules
+Selalu gunakan Bahasa Indonesia yang baik, santai, dan mudah dipahami untuk semua interaksi obrolan (chat), penjelasan kode, atau saat menulis komentar di dalam kode.
+
+# Git & Commit Rules
+Setiap kali diminta untuk men-generate pesan git commit melalui fitur Source Control, SELALU gunakan Bahasa Inggris. 
+Gunakan format standar "Conventional Commits" (misalnya menggunakan awalan feat:, fix:, update:, refactor:).
+Contoh: "feat: add relationship for Layanan model" atau "fix: typo in destroy method route".

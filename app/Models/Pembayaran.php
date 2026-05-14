@@ -14,11 +14,12 @@ class Pembayaran extends Model
         'id_transaksi',
         'metode',
         'jumlah_pembayaran',
+        'status_pembayaran',
         'tanggal_pembayaran',
     ];
 
     protected $casts = [
-        'jumlah_pembayaran' => 'decimal:2',
+        'jumlah_pembayaran' => 'decimal:1',
         'tanggal_pembayaran' => 'datetime',
     ];
 
