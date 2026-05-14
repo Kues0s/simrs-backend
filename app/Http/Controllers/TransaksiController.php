@@ -40,7 +40,7 @@ class TransaksiController extends Controller
         try{
             $validated = $request->validate([
                 'pasien_id' => 'required|integer',
-                'id_antrian' => 'required|integer',
+                'id_antrian' => 'nullable|integer',
                 'id_rm' => 'nullable|integer',
                 'id_resep' => 'nullable|integer',
                 'tanggal' => 'required|date',
@@ -48,26 +48,25 @@ class TransaksiController extends Controller
             ]);
 
             // LANGKAH 2: Verifikasi NIK ke API Kelompok 1
-            $cekPasien = Http::timeout(5)
-                ->withToken($request->bearerToken()) // ← pakai token kasir yang login
-                ->get("http://kelompok1.local/api/pasien", [
-                    'pasien_id' => $validated['pasien_id']
-                ]);
+            // $cekPasien = Http::timeout(5)
+            //     ->withToken($request->bearerToken()) // ← pakai token kasir yang login
+            //     ->get("http://kelompok1.local/api/pasien", [
+            //         'pasien_id' => $validated['pasien_id']
+            //     ]);
 
-            if ($cekPasien->failed() || empty($cekPasien->json('data'))) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pasien_id tidak ditemukan di sistem',
-                ], 404);
-            }
+            // if ($cekPasien->failed() || empty($cekPasien->json('data'))) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Pasien_id tidak ditemukan di sistem',
+            //     ], 404);
+            // }
 
-            $dataPasien = $cekPasien->json('data');
+            // $dataPasien = $cekPasien->json('data');
 
            // LANGKAH 4: Simpan ke DB
             $transaksi = Transaksi::create([
                 'pasien_id'   => $validated['pasien_id'],
-                'nik'         => $validated['nik'],
-                'id_antrian'  => $validated['id_antrian'],
+                'id_antrian'  => $validated['id_antrian'] ?? null,
                 'id_rm'       => $validated['id_rm'] ?? null,
                 'id_resep'    => $validated['id_resep'] ?? null,
                 'tanggal'     => $validated['tanggal'],
@@ -109,22 +108,24 @@ class TransaksiController extends Controller
     {
         try{
             $transaksi = Transaksi::findOrFail($id_transaksi);
-            $cekPasien = Http::timeout(5)
-            ->withToken(request()->bearerToken())
-            ->get("http://kelompok1.local/api/pasien", [
-                'nik' => $transaksi->nik
-            ]);
-            $cekAntrian = Http::timeout(5)
-            ->withToken(request()->bearerToken())
-            ->get("http://kelompok1.local/api/antrian/{$transaksi->id_antrian}");
 
-            if ($cekPasien->successful()) {
-                $transaksi->data_pasien = $cekPasien->json('data');
-            }
+            // $cekPasien = Http::timeout(5)
+            //     ->withToken(request()->bearerToken())
+            //     ->get("http://kelompok1.local/api/pasien", [
+            //     'nik' => $transaksi->nik
+            // ]);
+            
+            // $cekAntrian = Http::timeout(5)
+            // ->withToken(request()->bearerToken())
+            // ->get("http://kelompok1.local/api/antrian/{$transaksi->id_antrian}");
 
-            if ($cekAntrian->successful()) {
-                $transaksi->data_antrian = $cekAntrian->json('data');
-            }
+            // if ($cekPasien->successful()) {
+            //     $transaksi->data_pasien = $cekPasien->json('data');
+            // }
+
+            // if ($cekAntrian->successful()) {
+            //     $transaksi->data_antrian = $cekAntrian->json('data');
+            // }
 
             return response()->json([
                 'success' => true,
@@ -170,36 +171,36 @@ class TransaksiController extends Controller
                 'diskon'      => 'sometimes|nullable|numeric|min:0',
                 'pajak'       => 'sometimes|nullable|numeric|min:0',
                 'total_akhir' => 'sometimes|numeric|min:0',
-                'status'      => 'sometimes|in:menunggu,selesai,batal',
+                'status'      => 'sometimes|in:menunggu,selesai',
             ]);
 
             // Jika id_rm diupdate, verifikasi ke API kelompok 2
-            if (!empty($validated['id_rm'])) {
-                $cekRm = Http::timeout(5)
-                    ->withToken($request->bearerToken())
-                    ->get("http://kelompok2.local/api/rekam-medik/{$validated['id_rm']}");
+            // if (!empty($validated['id_rm'])) {
+            //     $cekRm = Http::timeout(5)
+            //         ->withToken($request->bearerToken())
+            //         ->get("http://kelompok2.local/api/rekam-medik/{$validated['id_rm']}");
 
-                if ($cekRm->failed()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Rekam medis tidak ditemukan',
-                    ], 404);
-                }
-            }
+            //     if ($cekRm->failed()) {
+            //         return response()->json([
+            //             'success' => false,
+            //             'message' => 'Rekam medis tidak ditemukan',
+            //         ], 404);
+            //     }
+            // }
 
             // Jika id_resep diupdate, verifikasi ke API kelompok 2
-            if (!empty($validated['id_resep'])) {
-                $cekResep = Http::timeout(5)
-                    ->withToken($request->bearerToken())
-                    ->get("http://kelompok2.local/api/e-resep/{$validated['id_resep']}");
+            // if (!empty($validated['id_resep'])) {
+            //     $cekResep = Http::timeout(5)
+            //         ->withToken($request->bearerToken())
+            //         ->get("http://kelompok2.local/api/e-resep/{$validated['id_resep']}");
 
-                if ($cekResep->failed()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Resep tidak ditemukan',
-                    ], 404);
-                }
-            }
+            //     if ($cekResep->failed()) {
+            //         return response()->json([
+            //             'success' => false,
+            //             'message' => 'Resep tidak ditemukan',
+            //         ], 404);
+            //     }
+            // }
 
             $transaksi->update($validated);
 
@@ -241,10 +242,10 @@ class TransaksiController extends Controller
     /**
      * Menghapus Data Transaksi
      */
-    public function destroy(Transaksi $transaksi)
+    public function destroy(String $id_transaksi)
     {
         try {
-            $transaksi = Transaksi::findOrFail($id);
+            $transaksi = Transaksi::findOrFail($id_transaksi);
             
             // Cek apakah transaksi boleh dihapus
             // Hanya transaksi dengan status 'menunggu' yang boleh dihapus

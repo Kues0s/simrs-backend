@@ -15,15 +15,18 @@ use Illuminate\Support\Facades\Route;
 
 //API Transaksi
 Route::get('/transaksi/jumlah-transaksi', [TransaksiController::class, 'jumlahTransaksi']);
-Route::apiResource('transaksi',TransaksiController::class)
-->parameters(['transaksi' => 'id_transaksi']);
+Route::get('/transaksi', [TransaksiController::class, 'index']);
+Route::get('/transaksi/{id_transaksi}', [TransaksiController::class, 'show']);
+Route::post('/transaksi', [TransaksiController::class, 'store']);
+Route::put('/transaksi/{id_transaksi}', [TransaksiController::class, 'update']);
+Route::delete('/transaksi/{id_transaksi}', [TransaksiController::class, 'destroy']);
 
 //API Layanan
-Route::get('/layanan', LayananController::class . '@index');
-Route::post('/layanan', LayananController::class . '@store');
-Route::get('/layanan/{id_layanan}', LayananController::class . '@show');
-Route::put('/layanan/{id_layanan}', LayananController::class . '@update');
-Route::delete('/layanan/{id_layanan}', LayananController::class . '@destroy');
+Route::get('/layanan', [LayananController::class, 'index']);
+Route::post('/layanan', [LayananController::class, 'store']);
+Route::get('/layanan/{id_layanan}', [LayananController::class, 'show']);
+Route::put('/layanan/{id_layanan}', [LayananController::class, 'update']);
+Route::delete('/layanan/{id_layanan}', [LayananController::class, 'destroy']);
 
 //API Pembayaran
 Route::get('/pembayaran', [PembayaranController::class, 'index']);
