@@ -13,8 +13,8 @@ class DetailTransaksiLayananController extends Controller
     public function index()
     {
         try{
-            //Query Menampilkan Data berdasar kan id_detail_layanan terbesar
-            $data = DetailTransaksiLayanan::with(['layanan', 'transaksi'])->get();
+            //Query Menampilkan Data 
+            $data = DetailTransaksiLayanan::with('layanan')->get();
 
             //Return Response dalam bentuk json
             return response()->json([
@@ -35,31 +35,48 @@ class DetailTransaksiLayananController extends Controller
      */
     public function store(Request $request)
     {
-        //Validasi Data
+        // Validasi: layanan berupa array
         $validateData = $request->validate([
-            'id_layanan' => 'required|integer',
-            'id_transaksi' => 'required|integer',
-            'jumlah_layanan' => 'required|integer',
+            'id_transaksi'          => 'required|integer',
+            'layanan'               => 'required|array',
+            'layanan.*.id_layanan'  => 'required|integer',
+            'layanan.*.jumlah_layanan' => 'required|integer',
         ]);
 
-        //Simpan Data
-        $data = DetailTransaksiLayanan::create($validateData);
+        try {
+            $savedData = [];
+            foreach ($validateData['layanan'] as $item) {
+                $savedData[] = DetailTransaksiLayanan::create([
+                    'id_transaksi'   => $validateData['id_transaksi'],
+                    'id_layanan'     => $item['id_layanan'],
+                    'jumlah_layanan' => $item['jumlah_layanan'],
+                ]);
+            }
 
-        //return response dalam bentuk json
-        return response()->json([
-            'succes' => true,
-            'message' => 'Data berhasil disimpan',
-            'data' => $data,
-        ],201);
+            return response()->json([
+                'succes'  => true,
+                'message' => 'Data berhasil disimpan',
+                'data'    => $savedData,
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error'   => 'Terdapat Kesalahan',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
      * Menampilkan Detail_transaksi_layanan tertentu
      */
-    public function show(DetailTransaksiLayanan $detailTransaksiLayanan)
+    public function show(String $id_detail_layanan)
     {
         //Cari data berdasarkan id
-        $data = DetailTransaksiLayanan::find($detailTransaksiLayanan);
+        $data = DetailTransaksiLayanan::with([
+            'layanan',
+            'transaksi',    
+        ])->find($id_detail_layanan);
 
         //Jika tidak ada data
         if(!$data){
@@ -80,10 +97,10 @@ class DetailTransaksiLayananController extends Controller
     /**
      * Update Data_transaksi_layanan
      */
-    public function update(Request $request, DetailTransaksiLayanan $detailTransaksiLayanan)
+    public function update(Request $request, String $id)
     {
         // 1. Mencari data dulu berdasarkan ID
-        $data = DetailTransaksiLayanan::find($detailTransaksiLayanan);
+        $data = DetailTransaksiLayanan::find($id);
 
         // jika data tidak ada
         if (!$data) {
@@ -114,11 +131,11 @@ class DetailTransaksiLayananController extends Controller
     /**
      * Menghapus Berdasarkan id_detail_layanan
      */
-    public function destroy(DetailTransaksiLayanan $detailTransaksiLayanan)
+    public function destroy(String $id)
     {
-        $data = DetailTransaksiLayanan::find($detailTransaksiLayanan);
+        $data = DetailTransaksiLayanan::find($id);
 
-        if(!data){
+        if(!$data){
             return response()->json([
                 'succes' => false,
                 'message' => 'Data tidak ditemukan',
@@ -129,6 +146,32 @@ class DetailTransaksiLayananController extends Controller
         return response()->json([
             'succes' => true,
             'message' => 'Data berhasil dihapus',
-        ],);
+        ],200);
+    }
+
+    public function destroyByTransaksi($id_transaksi)
+    {
+        try {
+            $deleted = DetailTransaksiLayanan::where('id_transaksi', $id_transaksi)->delete();
+
+            if (!$deleted) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data tidak ditemukan',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Semua layanan dalam transaksi berhasil dihapus',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error'   => 'Terdapat Kesalahan',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }
+

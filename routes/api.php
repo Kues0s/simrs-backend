@@ -48,6 +48,7 @@ Route::post('/transaksi_layanan', [DetailTransaksiLayananController::class, 'sto
 Route::get('/transaksi_layanan/{id_detail_layanan}', [DetailTransaksiLayananController::class, 'show']);
 Route::put('/transaksi_layanan/{id_detail_layanan}', [DetailTransaksiLayananController::class, 'update']);
 Route::delete('/transaksi_layanan/{id_detail_layanan}', [DetailTransaksiLayananController::class, 'destroy']);
+Route::delete('/transaksi_layanan/transaksi/{id_transaksi}', [DetailTransaksiLayananController::class, 'destroyByTransaksi']);
 
 
 //API Detail_Transaksi_Obat
