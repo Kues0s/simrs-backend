@@ -14,7 +14,7 @@ class DetailTransaksiLayananController extends Controller
     {
         try{
             //Query Menampilkan Data berdasar kan id_detail_layanan terbesar
-            $data = DetailTransaksiLayanan::orderBy('id_detail_layanan', 'desc')->get();
+            $data = DetailTransaksiLayanan::with(['layanan', 'transaksi'])->get();
 
             //Return Response dalam bentuk json
             return response()->json([

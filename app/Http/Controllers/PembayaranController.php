@@ -98,11 +98,11 @@ class PembayaranController extends Controller
 
         try {
             $data = Pembayaran::findOrFail($id_pembayaran);
-            $data->update($validateData);
+            $data->update($validatedData);
             return response()->json([
                 'success' => true,
                 'message' => 'Data pembayaran berhasil diupdate',
-                'data' => $id_pembayaran,
+                'data' => $data,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
