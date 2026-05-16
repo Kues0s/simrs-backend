@@ -32,15 +32,15 @@ class AntrianPembayaranController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'id_transaksi' => 'required|integer',
-            'no_antrian_pay' => 'required|string',
+            'no_pembayaran' => 'required|integer',
             'status_antrian' => 'required|in:menunggu,dipanggil,selesai',
             'waktu_masuk' => 'required|date',
         ]);
 
         try {
-            $antrianPembayaran = AntrianPembayaran::create($request->all());
+            $antrianPembayaran = AntrianPembayaran::create($validatedData);
             return response()->json([
                 'success' => true,
                 'message' => 'Data antrian pembayaran berhasil dibuat',
@@ -57,10 +57,10 @@ class AntrianPembayaranController extends Controller
     /**
      * Menampilkan sebuah antrian.
      */
-    public function show(AntrianPembayaran $antrianPembayaran)
+    public function show(String $id)
     {
         try{
-            $antrianPembayaran = AntrianPembayaran::findOrFail($antrianPembayaran->id_antrian_pay);
+            $antrianPembayaran = AntrianPembayaran::with('transaksi')->findOrFail($id);
             return response()->json([
                 'success' => true,  
                 'message' => 'Data antrian pembayaran berhasil diambil',
@@ -77,16 +77,17 @@ class AntrianPembayaranController extends Controller
     /**
      * Update Antrian Pemabayaran (digunakan update status antrian).
      */
-    public function update(Request $request, AntrianPembayaran $antrianPembayaran)
+    public function update(Request $request, String $id)
     {
         try{
             $validatedData = $request->validate([
-                'id_transaksi' => 'integer',
-                'no_antrian_pay' => 'string',
-                'status_antrian' => 'in:menunggu,dipanggil,selesai',
-                'waktu_masuk' => 'date',
+                'id_transaksi' => 'sometimes|required|integer',
+                'no_pembayaran' => 'sometimes|required|integer',
+                'status_antrian' => 'sometimes|required|in:menunggu,dipanggil,selesai',
+                'waktu_masuk' => 'sometimes|required|date',
             ]);
-            $antrianPembayaran = AntrianPembayaran::findOrFail($antrianPembayaran->id_antrian_pay);
+
+            $antrianPembayaran = AntrianPembayaran::findOrFail($id);
             $antrianPembayaran->update($validatedData);
 
             return response()->json([
@@ -105,14 +106,15 @@ class AntrianPembayaranController extends Controller
     /**
      * Menghapus Antrian berdasarkan id_antrian.
      */
-    public function destroy(AntrianPembayaran $antrianPembayaran)
+    public function destroy($id)
     {
-        $antrianPembayaran = AntrianPembayaran::findOrFail($antrianPembayaran->id_antrian_pay);
         try{
+            $antrianPembayaran = AntrianPembayaran::findOrFail($id);
             $antrianPembayaran->delete();
             return response()->json([
                 'success' => true,
                 'message' => 'Data antrian pembayaran berhasil dihapus',
+                'data' => $antrianPembayaran,
             ], 200);
         }catch(\Exception $e){
             return response()->json([

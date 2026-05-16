@@ -12,7 +12,7 @@ class DetailTransaksiObatController extends Controller
      */
     public function index()
     {
-        $data = DetailTransaksiObat::orderBy('id_detail_obat', 'desc')->get();
+        $data = DetailTransaksiObat::all();
         return response()->json([
             'succes' => true,
             'message' => 'Data Transkasi Obat berhasil ditemukan',
@@ -26,17 +26,25 @@ class DetailTransaksiObatController extends Controller
     public function store(Request $request)
     {
         $validateData = $request->validate([
-            'id_obat' => 'required|integer',
             'id_transaksi' => 'required|integer',
-            'jumlah_obat' => 'required|integer',
+            'obat' => 'required|array',
+            'obat.*.id_obat' =>'required|integer', 
+            'obat.*.jumlah_obat' => 'required|integer',
         ]);
 
-        $data = DetailTransaksiObat::create($validateData);
+        $savedData = [];
+        foreach ($validateData['obat'] as $item) {
+            $savedData[] = DetailTransaksiObat::create([
+                'id_transaksi'   => $validateData['id_transaksi'],
+                'id_obat'     => $item['id_obat'],
+                'jumlah_obat' => $item['jumlah_obat'],
+            ]);
+        }
 
         return response()->json([
             'succes' => true,
             'message' => 'Data berhasil ditambahkan',
-            'data' => $data,
+            'data' => $savedData,
         ],201);
 
     }
@@ -44,9 +52,9 @@ class DetailTransaksiObatController extends Controller
     /**
      * Menampilkan Data Transaksi Obat tertentu.
      */
-    public function show(DetailTransaksiObat $detailTransaksiObat)
+    public function show(String $id)
     {
-        $data = DetailTransaksiObat::find($detailTransaksiObat);
+        $data = DetailTransaksiObat::with('transaksi')->find($id);
         if(!$data){
             return response()->json([
                 'succes' => false,
@@ -64,9 +72,9 @@ class DetailTransaksiObatController extends Controller
     /**
      * Update data Transaksi_layanan.
      */
-    public function update(Request $request, DetailTransaksiObat $detailTransaksiObat)
+    public function update(Request $request, String $id)
     {
-        $data = DetailTransaksiObat::find($detailTransaksiObat);
+        $data = DetailTransaksiObat::find($id);
         if(!$data){
             return response()->json([
                 'succes' => false,
@@ -74,13 +82,13 @@ class DetailTransaksiObatController extends Controller
             ],404);
         }
 
-        $validateData = $request->validate([
+        $validatedData = $request->validate([
             'id_obat' => 'required|integer',
             'id_transaksi' => 'required|integer',
             'jumlah_obat' => 'required|integer',
         ]);
 
-        $data->update($validateData);
+        $data->update($validatedData);
 
         return response()->json([
             'succes' => true,
@@ -92,9 +100,9 @@ class DetailTransaksiObatController extends Controller
     /**
      * Menghapus Data Transaksai Obat.
      */
-    public function destroy(DetailTransaksiObat $detailTransaksiObat)
+    public function destroy(String $id)
     {
-        $data = DetailTransaksiObat::find($detailTransaksiObat);
+        $data = DetailTransaksiObat::find($id);
         if(!$data){
             return response()->json([
                 'succes' => false,
