@@ -34,9 +34,9 @@ class PembayaranController extends Controller
     {
         $validateData = $request->validate([
             'id_transaksi' => 'required|integer',
-            'metode' => 'required|in:cash, debit, transfer',
+            'metode' => 'required|in:cash,debit,transfer',
             'jumlah_pembayaran' => 'required|numeric',
-            'status_pembayaran' => 'required|in:pending, berhasil, gagal',
+            'status_pembayaran' => 'required|in:pending,berhasil,gagal',
             'tanggal_pembayaran' => 'required|date',
         ]);
 
@@ -58,7 +58,7 @@ class PembayaranController extends Controller
     /**
      * Menampilkan Data Pembayaran Tertentu
      */
-    public function show(Pembayaran $id_pembayaran)
+    public function show(String $id_pembayaran)
     {
         try{
             $data = Pembayaran::find($id_pembayaran);
@@ -86,18 +86,19 @@ class PembayaranController extends Controller
     /**
      * Update Data Pembayaran
      */
-    public function update(Request $request, Pembayaran $id_pembayaran)
+    public function update(Request $request, String $id_pembayaran)
     {
         $validatedData = $request->validate([
             'id_transaksi' => 'sometimes|required|integer',
-            'metode' => 'sometimes|required|in:cash, debit, transfer',
+            'metode' => 'sometimes|required|in:cash,debit,transfer',
             'jumlah_pembayaran' => 'sometimes|required|numeric',
-            'status_pembayaran' => 'sometimes|required|in:pending, berhasil, gagal',
+            'status_pembayaran' => 'sometimes|required|in:pending,berhasil,gagal',
             'tanggal_pembayaran' => 'sometimes|required|date',
         ]);
 
         try {
-            $id_pembayaran->update($validatedData);
+            $data = Pembayaran::findOrFail($id_pembayaran);
+            $data->update($validateData);
             return response()->json([
                 'success' => true,
                 'message' => 'Data pembayaran berhasil diupdate',
@@ -114,10 +115,11 @@ class PembayaranController extends Controller
     /**
      * Menghapus Data Pembayaran
      */
-    public function destroy(Pembayaran $id_pembayaran)
+    public function destroy(String $id_pembayaran)
     {
         try {
-            $id_pembayaran->delete();
+            $data = Pembayaran::findOrFail($id_pembayaran);
+            $data->delete();
             return response()->json([
                 'success' => true,
                 'message' => 'Data pembayaran berhasil dihapus',
