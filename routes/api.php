@@ -57,3 +57,4 @@ Route::post('/transaksi_obat', [DetailTransaksiObatController::class, 'store']);
 Route::get('/transaksi_obat/{id_detail_obat}', [DetailTransaksiObatController::class, 'show']);
 Route::put('/transaksi_obat/{id_detail_obat}', [DetailTransaksiObatController::class, 'update']);
 Route::delete('/transaksi_obat/{id_detail_obat}', [DetailTransaksiObatController::class, 'destroy']);
+Route::delete('/transaksi_obat/transaksi/{id_transaksi}', [DetailTransaksiObatController::class, 'destroyByTransaksi']);

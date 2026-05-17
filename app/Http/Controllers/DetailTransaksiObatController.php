@@ -116,4 +116,30 @@ class DetailTransaksiObatController extends Controller
             'data' => $data,
         ]);
     }
+
+    /**
+ * Menghapus berdasarkan id transaksi
+ */
+ public function destroyByTransaksi($id_transaksi)
+ {
+     try {
+         $deleted = DetailTransaksiObat::where('id_transaksi', $id_transaksi)->delete();
+         if (!$deleted) {
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Data tidak ditemukan',
+             ], 404);
+         }
+
+         return response()->json([
+             'success' => true,
+             'message' => 'Semua Obat dalam transaksi berhasil dihapus',
+         ], 200);
+     } catch (\Exception $e) {
+         return response()->json([
+             'error'   => 'Terdapat Kesalahan',
+             'message' => $e->getMessage()
+         ], 500);
+     }
+ }
 }

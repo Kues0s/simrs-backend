@@ -149,6 +149,10 @@ class DetailTransaksiLayananController extends Controller
         ],200);
     }
 
+/**
+ * Menghapus berdasarkan id transaksi
+ */
+
     public function destroyByTransaksi($id_transaksi)
     {
         try {
