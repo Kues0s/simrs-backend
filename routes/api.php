@@ -20,6 +20,7 @@ Route::get('/transaksi/{id_transaksi}', [TransaksiController::class, 'show']);
 Route::post('/transaksi', [TransaksiController::class, 'store']);
 Route::put('/transaksi/{id_transaksi}', [TransaksiController::class, 'update']);
 Route::delete('/transaksi/{id_transaksi}', [TransaksiController::class, 'destroy']);
+Route::get('/transaksi/{id_rm}/rm', [TransaksiController::class, 'getTransaksiByIdRm']);
 
 //API Layanan
 Route::get('/layanan', [LayananController::class, 'index']);

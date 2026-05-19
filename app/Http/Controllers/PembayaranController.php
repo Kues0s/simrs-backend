@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pembayaran;
+use App\Models\Transaksi;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class PembayaranController extends Controller
@@ -32,28 +34,55 @@ class PembayaranController extends Controller
      */
     public function store(Request $request)
     {
-        $validateData = $request->validate([
-            'id_transaksi' => 'required|integer',
-            'metode' => 'required|in:cash,debit,transfer',
-            'jumlah_pembayaran' => 'required|numeric',
-            'status_pembayaran' => 'required|in:pending,berhasil,gagal',
-            'tanggal_pembayaran' => 'required|date',
-        ]);
+            $validated = $request->validate([
+                'id_transaksi'      => 'required|integer|exists:transaksi,id_transaksi',
+                'metode'            => 'required|in:cash,qris,debit',
+                'jumlah_pembayaran' => 'required|numeric|min:0',
+            ]);
 
-        try {
-            $pembayaran = Pembayaran::create($validateData);
+            // Cek transaksi sudah ada & statusnya masih menunggu
+            $transaksi = Transaksi::with([
+                'detailTransaksiLayanan.layanan',
+                'detailObat',
+            ])->findOrFail($validated['id_transaksi']);
+
+            if ($transaksi->status === 'selesai') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaksi ini sudah dibayar',
+                ], 400);
+            }
+
+            // Simpan pembayaran
+            $pembayaran = Pembayaran::create([
+                'id_transaksi'       => $validated['id_transaksi'],
+                'metode'             => $validated['metode'],
+                'jumlah_pembayaran'  => $validated['jumlah_pembayaran'],
+                'status_pembayaran'  => 'berhasil',
+                'tanggal_pembayaran' => Carbon::now()->toDateTimeString(),
+            ]);
+
+            // Update status transaksi menjadi selesai
+            $transaksi->update([
+                'status' => 'selesai',
+            ]);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Data pembayaran berhasil ditambahkan',
-                'data' => $pembayaran,
+                'message' => 'Pembayaran berhasil',
+                'data'    => [
+                    'pembayaran' => $pembayaran,
+                    'transaksi'  => [
+                        'id_transaksi'     => $transaksi->id_transaksi,
+                        'status'           => 'selesai',
+                        'subtotal_layanan' => $transaksi->subtotal_layanan,
+                        'subtotal_obat'    => $transaksi->subtotal_obat,
+                        'total_bayar'      => $transaksi->total_bayar,
+                    ],
+                ],
             ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Gagal menambahkan data pembayaran',
-                'message' => $e->getMessage()
-            ], 500);
         }
-    }
+
 
     /**
      * Menampilkan Data Pembayaran Tertentu

@@ -37,4 +37,10 @@ class DetailTransaksiLayanan extends Model
     {
         return $this->belongsTo(Layanan::class, 'id_layanan', 'id_layanan');
     }
+
+    // 1. Menghitung Subtotal Layanan (Harga x Jumlah)
+    public function getSubtotalAttribute()
+    {
+        return $this->jumlah_layanan * ($this->layanan->tarif_dokter + $this->layanan->tarif_perawat);
+    }
 }

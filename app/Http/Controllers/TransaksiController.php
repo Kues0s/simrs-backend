@@ -43,8 +43,6 @@ class TransaksiController extends Controller
                 'id_antrian' => 'nullable|integer',
                 'id_rm' => 'nullable|integer',
                 'id_resep' => 'nullable|integer',
-                'tanggal' => 'required|date',
-                'status' => 'required|in:menunggu,selesai',
             ]);
 
             // LANGKAH 2: Verifikasi NIK ke API Kelompok 1
@@ -69,8 +67,8 @@ class TransaksiController extends Controller
                 'id_antrian'  => $validated['id_antrian'] ?? null,
                 'id_rm'       => $validated['id_rm'] ?? null,
                 'id_resep'    => $validated['id_resep'] ?? null,
-                'tanggal'     => $validated['tanggal'],
-                'status'      => $validated['status'],
+                'tanggal'     => Carbon::now()->toDateTimeString(),
+                'status'      => 'menunggu',
             ]);
 
             return response()->json([
@@ -104,46 +102,57 @@ class TransaksiController extends Controller
     /**
      * Menampilkan Data Transaksi Tertentu
      */
-    public function show(String $id_transaksi)
+    public function show($id_transaksi)
     {
-        try{
-            $transaksi = Transaksi::findOrFail($id_transaksi);
-
-            // $cekPasien = Http::timeout(5)
-            //     ->withToken(request()->bearerToken())
-            //     ->get("http://kelompok1.local/api/pasien", [
-            //     'nik' => $transaksi->nik
-            // ]);
-            
-            // $cekAntrian = Http::timeout(5)
-            // ->withToken(request()->bearerToken())
-            // ->get("http://kelompok1.local/api/antrian/{$transaksi->id_antrian}");
-
-            // if ($cekPasien->successful()) {
-            //     $transaksi->data_pasien = $cekPasien->json('data');
-            // }
-
-            // if ($cekAntrian->successful()) {
-            //     $transaksi->data_antrian = $cekAntrian->json('data');
-            // }
+        try {
+            $transaksi = Transaksi::with([
+                'detailTransaksiLayanan.layanan',
+                'detailTransaksiObat',
+                'pembayaran',
+            ])->findOrFail($id_transaksi);
 
             return response()->json([
                 'success' => true,
-                'data'    => $transaksi,
+                'message' => 'Transaksi ditemukan',
+                'data'    => [
+                    'transaksi' => [
+                        'id_transaksi' => $transaksi->id_transaksi,
+                        'pasien_id'    => $transaksi->pasien_id,
+                        'id_rm'        => $transaksi->id_rm,
+                        'id_antrian'   => $transaksi->id_antrian,
+                        'tanggal'      => $transaksi->tanggal,
+                        'status'       => $transaksi->status,
+                    ],
+                    'detail_layanan' => $transaksi->detailTransaksiLayanan->map(function ($item) {
+                        return [
+                            'nama_layanan'   => $item->layanan->nama_layanan,
+                            'jumlah_layanan' => $item->jumlah_layanan,
+                            'tarif_dokter'   => $item->layanan->tarif_dokter,
+                            'tarif_perawat'  => $item->layanan->tarif_perawat,
+                            'subtotal'       => $item->subtotal,
+                        ];
+                    }),
+                    'detail_obat'    => $transaksi->detailTransaksiObat->map(function ($item) {
+                        return [
+                            'id_obat'     => $item->id_obat,
+                            'jumlah_obat' => $item->jumlah_obat,
+                            // harga & nama obat menyusul dari kelompok 4
+                        ];
+                    }),
+                    'ringkasan'      => [
+                        'subtotal_layanan' => $transaksi->subtotal_layanan,
+                        'subtotal_obat'    => $transaksi->subtotal_obat,
+                        'total_bayar'      => $transaksi->total_bayar,
+                    ],
+                    'pembayaran'     => $transaksi->pembayaran,
+                ],
             ], 200);
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Transaksi tidak ditemukan',
-            ], 404);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan',
-                'error'   => $e->getMessage(),
-            ], 500);
+                'message' => 'Transaksi tidak ditemukan',
+            ], 404);
         }
     }
 
@@ -167,10 +176,6 @@ class TransaksiController extends Controller
                 'id_rm'       => 'sometimes|nullable|integer',
                 'id_resep'    => 'sometimes|nullable|integer',
                 'tanggal'     => 'sometimes|date',
-                'subtotal'    => 'sometimes|numeric|min:0',
-                'diskon'      => 'sometimes|nullable|numeric|min:0',
-                'pajak'       => 'sometimes|nullable|numeric|min:0',
-                'total_akhir' => 'sometimes|numeric|min:0',
                 'status'      => 'sometimes|in:menunggu,selesai',
             ]);
 
@@ -299,5 +304,35 @@ class TransaksiController extends Controller
                 // Kamu bisa tambah total_tahun_ini atau total_semua di sini nanti
             ]
         ]);
+    }
+
+    /**
+     * Menampilkan Transaksi Berdasarkan id_rm
+     */
+    public function getTransaksiByIdRm(String $id_rm)
+    {
+        try {
+            $transaksi = Transaksi::where('id_rm', $id_rm)->with([
+                'detailTransaksiLayanan.layanan',
+                'detailTransaksiObat',
+                'pembayaran'
+            ])->get();
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaksi berhasil ditemukan',
+                'data'    => $transaksi,
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaksi tidak ditemukan',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
     }
 }

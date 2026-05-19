@@ -31,10 +31,16 @@ class Transaksi extends Model
         'status' => 'string',
     ];
 
-    // Relasi ke detail transaksi
+    // Relasi ke detail transaksi layanan
     public function detailTransaksiLayanan()
     {
         return $this->hasMany(DetailTransaksiLayanan::class, 'id_transaksi', 'id_transaksi');
+    }
+
+    // Relasi ke detail transaksi obat
+    public function detailTransaksiObat()
+    {
+        return $this->hasMany(DetailTransaksiObat::class, 'id_transaksi', 'id_transaksi');
     }
 
     // Relasi ke pembayaran
@@ -47,13 +53,24 @@ class Transaksi extends Model
     {
         return $this->hasOne(AntrianPembayaran::class, 'id_transaksi', 'id_transaksi');
     }
-
-    // 1. Menghitung Subtotal Layanan (Harga x Jumlah)
+    
+    // Subtotal layanan
     public function getSubtotalLayananAttribute()
     {
-        return $this->detailLayanan->sum(function ($layanan) {
-            return $layanan->harga * $layanan->jumlah;
+        return $this->detailTransaksiLayanan->sum(function ($item) {
+            return $item->subtotal;
         });
     }
-    
+
+    // Subtotal obat → 0 dulu karena data obat dari kelompok 4
+    public function getSubtotalObatAttribute()
+    {
+        return 0;
+    }
+
+    // Total bayar
+    public function getTotalBayarAttribute()
+    {
+        return $this->subtotal_layanan + $this->subtotal_obat;
+    }
 }
