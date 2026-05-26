@@ -34,11 +34,6 @@ class Transaksi extends Model
         'status' => 'string',
     ];
 
-    // Relasi ke detail transaksi obat
-    public function detailTransaksiObat()
-    {
-        return $this->hasMany(DetailTransaksiObat::class, 'id_transaksi', 'id_transaksi');
-    }
 
     // Relasi ke pembayaran
     public function pembayaran()
