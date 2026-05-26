@@ -6,6 +6,8 @@ use App\Models\Pembayaran;
 use App\Models\Transaksi;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class PembayaranController extends Controller
 {
@@ -34,26 +36,26 @@ class PembayaranController extends Controller
      */
     public function store(Request $request)
     {
-            $validated = $request->validate([
-                'id_transaksi'      => 'required|integer|exists:transaksi,id_transaksi',
-                'metode'            => 'required|in:cash,qris,debit',
-                'jumlah_pembayaran' => 'required|numeric|min:0',
-            ]);
+        $validated = $request->validate([
+            'id_transaksi'      => 'required|integer|exists:transaksi,id_transaksi',
+            'metode'            => 'required|in:cash,qris,debit',
+            'jumlah_pembayaran' => 'required|numeric|min:0',
+        ]);
 
-            // Cek transaksi sudah ada & statusnya masih menunggu
-            $transaksi = Transaksi::with([
-                'detailTransaksiLayanan.layanan',
-                'detailObat',
-            ])->findOrFail($validated['id_transaksi']);
+        // Cek transaksi
+        $transaksi = Transaksi::findOrFail($validated['id_transaksi']);
 
-            if ($transaksi->status === 'selesai') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Transaksi ini sudah dibayar',
-                ], 400);
-            }
+        if ($transaksi->status === 'selesai') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaksi ini sudah dibayar',
+            ], 400);
+        }
 
-            // Simpan pembayaran
+        DB::beginTransaction();
+
+        try {
+            // 1. Simpan pembayaran
             $pembayaran = Pembayaran::create([
                 'id_transaksi'       => $validated['id_transaksi'],
                 'metode'             => $validated['metode'],
@@ -62,26 +64,59 @@ class PembayaranController extends Controller
                 'tanggal_pembayaran' => Carbon::now()->toDateTimeString(),
             ]);
 
-            // Update status transaksi menjadi selesai
-            $transaksi->update([
-                'status' => 'selesai',
-            ]);
+            // 2. Update status transaksi → selesai
+            $transaksi->update(['status' => 'selesai']);
+
+            // 3. Hit API kelompok 1 → update status antrian → lunas
+            if ($transaksi->id_antrian) {
+                $antriResponse = Http::put(
+                    env('K1_API_BASE_URL') . '/antrian/' . $transaksi->id_antrian . '/status',
+                    ['status' => 'lunas'] // ⚠️ sesuaikan nama status kelompok 1
+                );
+
+                // Jika gagal → rollback semua!
+                if ($antriResponse->failed()) {
+                    DB::rollBack();
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Pembayaran gagal karena tidak dapat mengupdate status antrian',
+                        'error'   => $antriResponse->body(),
+                    ], 500);
+                }
+            }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Pembayaran berhasil',
                 'data'    => [
-                    'pembayaran' => $pembayaran,
+                    'pembayaran' => [
+                        'id_pembayaran'      => $pembayaran->id_pembayaran,
+                        'id_transaksi'       => $pembayaran->id_transaksi,
+                        'metode'             => $pembayaran->metode,
+                        'jumlah_pembayaran'  => $pembayaran->jumlah_pembayaran,
+                        'status_pembayaran'  => $pembayaran->status_pembayaran,
+                        'tanggal_pembayaran' => $pembayaran->tanggal_pembayaran,
+                    ],
                     'transaksi'  => [
-                        'id_transaksi'     => $transaksi->id_transaksi,
-                        'status'           => 'selesai',
-                        'subtotal_layanan' => $transaksi->subtotal_layanan,
-                        'subtotal_obat'    => $transaksi->subtotal_obat,
-                        'total_bayar'      => $transaksi->total_bayar,
+                        'id_transaksi' => $transaksi->id_transaksi,
+                        'status'       => 'selesai',
                     ],
                 ],
             ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
+    } 
 
 
     /**
