@@ -380,12 +380,6 @@ class PembayaranController extends Controller
                         'pendapatan_layanan'=> $pendapatanLayanan,
                         'total_pendapatan'  => $totalPendapatan,
                     ],
-                    'tabel' => [
-                        ['no' => 1, 'keterangan' => 'Total Transaksi',    'jumlah' => $totalTransaksi],
-                        ['no' => 2, 'keterangan' => 'Pendapatan Obat',    'jumlah' => $pendapatanObat],
-                        ['no' => 3, 'keterangan' => 'Pendapatan Layanan', 'jumlah' => $pendapatanLayanan],
-                        ['no' => 4, 'keterangan' => 'Total Pendapatan',   'jumlah' => $totalPendapatan],
-                    ],
                 ],
             ], 200);
 
