@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Pembayaran;
 use App\Models\Transaksi;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -16,45 +17,56 @@ class PembayaranController extends Controller
      */
     public function index()
     {
-        try{
-            $pembayaran = Pembayaran::all();
-            return response()->json([
-                'success' => true,
-                'message' => 'Data pembayaran berhasil diambil',
-                'data' => $pembayaran,
-            ], 200);
-        }catch(\Exception $e){
-            return response()->json([
-                'error' => 'Gagal mengambil data pembayaran',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+        $pembayaran = Pembayaran::with('transaksi')->get();
+        return response()->json([
+            'success' => true,
+            'message' => 'Data pembayaran berhasil diambil',
+            'data' => $pembayaran,
+        ], 200);
     }
+
 
     /**
      * Menambahkan Data Pembayaran 
      */
-    public function store(Request $request)
+   public function store(Request $request)
     {
-        $validated = $request->validate([
-            'id_transaksi'      => 'required|integer|exists:transaksi,id_transaksi',
-            'metode'            => 'required|in:cash,qris,debit',
-            'jumlah_pembayaran' => 'required|numeric|min:0',
-        ]);
-
-        // Cek transaksi
-        $transaksi = Transaksi::findOrFail($validated['id_transaksi']);
-
-        if ($transaksi->status === 'selesai') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Transaksi ini sudah dibayar',
-            ], 400);
-        }
-
-        DB::beginTransaction();
-
         try {
+            $validated = $request->validate([
+                'id_transaksi'      => 'required|integer|exists:transaksi,id_transaksi',
+                'metode'            => 'required|in:cash,qris,debit',
+                'total_tagihan'     => 'required|numeric|min:0', 
+                'jumlah_pembayaran' => 'required|numeric|min:0',
+            ]);
+
+            // Cek transaksi
+            $transaksi = Transaksi::findOrFail($validated['id_transaksi']);
+
+            if ($transaksi->status === 'selesai') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaksi ini sudah dibayar',
+                ], 400);
+            }
+
+            // Cek jumlah pembayaran cukup
+            if ($validated['jumlah_pembayaran'] < $validated['total_tagihan']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Jumlah pembayaran kurang dari total tagihan',
+                    'data'    => [
+                        'total_tagihan'     => $validated['total_tagihan'],
+                        'jumlah_pembayaran' => $validated['jumlah_pembayaran'],
+                        'kurang'            => $validated['total_tagihan'] - $validated['jumlah_pembayaran'],
+                    ]
+                ], 400);
+            }
+
+            // Hitung kembalian
+            $kembalian = $validated['jumlah_pembayaran'] - $validated['total_tagihan']; 
+
+            DB::beginTransaction();
+
             // 1. Simpan pembayaran
             $pembayaran = Pembayaran::create([
                 'id_transaksi'       => $validated['id_transaksi'],
@@ -67,14 +79,13 @@ class PembayaranController extends Controller
             // 2. Update status transaksi → selesai
             $transaksi->update(['status' => 'selesai']);
 
-            // 3. Hit API kelompok 1 → update status antrian → lunas
+            // 3. Hit API kelompok 1 → update status antrian
             if ($transaksi->id_antrian) {
                 $antriResponse = Http::put(
                     env('K1_API_BASE_URL') . '/antrian/' . $transaksi->id_antrian . '/status',
                     ['status' => 'lunas'] // ⚠️ sesuaikan nama status kelompok 1
                 );
 
-                // Jika gagal → rollback semua!
                 if ($antriResponse->failed()) {
                     DB::rollBack();
 
@@ -96,7 +107,9 @@ class PembayaranController extends Controller
                         'id_pembayaran'      => $pembayaran->id_pembayaran,
                         'id_transaksi'       => $pembayaran->id_transaksi,
                         'metode'             => $pembayaran->metode,
+                        'total_tagihan'      => $validated['total_tagihan'], 
                         'jumlah_pembayaran'  => $pembayaran->jumlah_pembayaran,
+                        'kembalian'          => $kembalian,
                         'status_pembayaran'  => $pembayaran->status_pembayaran,
                         'tanggal_pembayaran' => $pembayaran->tanggal_pembayaran,
                     ],
@@ -106,43 +119,48 @@ class PembayaranController extends Controller
                     ],
                 ],
             ], 201);
-
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors'  => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             DB::rollBack();
-
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan',
                 'error'   => $e->getMessage(),
             ], 500);
         }
-    } 
+    }
 
 
     /**
      * Menampilkan Data Pembayaran Tertentu
      */
-    public function show(String $id_pembayaran)
+   public function show(String $id_pembayaran)
     {
-        try{
-            $data = Pembayaran::find($id_pembayaran);
-
-            if(!$data){
-                return response()->json([
-                    'succes' => false,
-                    'message' => 'Data Pembayaran tidak ditemukan',
-                ],404);
-            }
+        try {
+            $pembayaran = Pembayaran::with('transaksi')->findOrFail($id_pembayaran);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Data pembayaran berhasil diambil',
-                'data' => $data,
+                'data'    => $pembayaran,
             ], 200);
-        }catch(\Exception $e){
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
-                'error' => 'Gagal mengambil data pembayaran',
-                'message' => $e->getMessage()
+                'success' => false,
+                'message' => 'Data pembayaran tidak ditemukan',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan',
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
@@ -152,26 +170,47 @@ class PembayaranController extends Controller
      */
     public function update(Request $request, String $id_pembayaran)
     {
-        $validatedData = $request->validate([
-            'id_transaksi' => 'sometimes|required|integer',
-            'metode' => 'sometimes|required|in:cash,debit,transfer',
-            'jumlah_pembayaran' => 'sometimes|required|numeric',
-            'status_pembayaran' => 'sometimes|required|in:pending,berhasil,gagal',
-            'tanggal_pembayaran' => 'sometimes|required|date',
-        ]);
-
         try {
-            $data = Pembayaran::findOrFail($id_pembayaran);
-            $data->update($validatedData);
+            $validated = $request->validate([
+                'metode'            => 'sometimes|required|in:cash,qris,debit',
+                'jumlah_pembayaran' => 'sometimes|required|numeric|min:0',
+                'status_pembayaran' => 'sometimes|required|in:pending,berhasil,gagal',
+            ]);
+
+            $pembayaran = Pembayaran::findOrFail($id_pembayaran);
+
+            // Cek pembayaran sudah berhasil
+            if ($pembayaran->status_pembayaran === 'berhasil') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pembayaran yang sudah berhasil tidak bisa diupdate',
+                ], 400);
+            }
+
+            $pembayaran->update($validated);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Data pembayaran berhasil diupdate',
-                'data' => $data,
+                'data'    => $pembayaran,
             ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pembayaran tidak ditemukan',
+            ], 404);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors'  => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Gagal mengupdate data pembayaran',
-                'message' => $e->getMessage()
+                'success' => false,
+                'message' => 'Terjadi kesalahan',
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
@@ -182,16 +221,33 @@ class PembayaranController extends Controller
     public function destroy(String $id_pembayaran)
     {
         try {
-            $data = Pembayaran::findOrFail($id_pembayaran);
-            $data->delete();
+            $pembayaran = Pembayaran::findOrFail($id_pembayaran);
+
+            // Cek pembayaran sudah berhasil
+            if ($pembayaran->status_pembayaran === 'berhasil') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pembayaran yang sudah berhasil tidak bisa dihapus',
+                ], 400);
+            }
+
+            $pembayaran->delete();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Data pembayaran berhasil dihapus',
             ], 200);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pembayaran tidak ditemukan',
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Gagal menghapus data pembayaran',
-                'message' => $e->getMessage()
+                'success' => false,
+                'message' => 'Terjadi kesalahan',
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
