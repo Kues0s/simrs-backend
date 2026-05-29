@@ -21,6 +21,7 @@ Route::get('/transaksi/{id_antrian}/antrian', [TransaksiController::class, 'getT
 
 
 //API Pembayaran
+Route::get('/pembayaran/statistik', [PembayaranController::class, 'Statistik']);
 Route::get('/pembayaran', [PembayaranController::class, 'index']);
 Route::post('/pembayaran', [PembayaranController::class, 'store']);
 Route::get('/pembayaran/{id_pembayaran}', [PembayaranController::class, 'show']);

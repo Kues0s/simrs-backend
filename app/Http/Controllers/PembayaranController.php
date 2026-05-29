@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 
 class PembayaranController extends Controller
 {
@@ -81,9 +82,7 @@ class PembayaranController extends Controller
 
             // 3. Hit API kelompok 1 → update status antrian
             if ($transaksi->id_antrian) {
-                $antriResponse = Http::put(
-                    env('K1_API_BASE_URL') . '/antrian/' . $transaksi->id_antrian . '/status',
-                    ['status' => 'lunas'] // ⚠️ sesuaikan nama status kelompok 1
+                $antriResponse = Http::put(env('K1_API_BASE_URL') . '/antrian/' . $transaksi->id_antrian . '/status',['status' => 'lunas'] 
                 );
 
                 if ($antriResponse->failed()) {
@@ -195,12 +194,12 @@ class PembayaranController extends Controller
                 'data'    => $pembayaran,
             ], 200);
 
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data pembayaran tidak ditemukan',
             ], 404);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal',
@@ -243,6 +242,159 @@ class PembayaranController extends Controller
                 'success' => false,
                 'message' => 'Data pembayaran tidak ditemukan',
             ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Statistik Laporan Pembayaran Harian, Bulanan, Tahunan
+     */
+    public function statistik(Request $request)
+    {
+        try {
+            $bulan = $request->query('bulan', Carbon::now()->month);
+            $tahun = $request->query('tahun', Carbon::now()->year);
+
+            // LAPORAN HARIAN
+            $harian = Pembayaran::with('transaksi')
+                ->whereDate('tanggal_pembayaran', Carbon::today())
+                ->where('status_pembayaran', 'berhasil')
+                ->get();
+
+           
+            // LAPORAN BULANAN
+            $bulanan = Pembayaran::with('transaksi')
+                ->whereMonth('tanggal_pembayaran', $bulan)
+                ->whereYear('tanggal_pembayaran', $tahun)
+                ->where('status_pembayaran', 'berhasil')
+                ->get();
+
+            // LAPORAN TAHUNAN
+            $tahunan = Pembayaran::with('transaksi')
+                ->whereYear('tanggal_pembayaran', $tahun)
+                ->where('status_pembayaran', 'berhasil')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Statistik laporan berhasil diambil',
+                'data'    => [
+                    'harian'  => [
+                        'jumlah_transaksi'  => $harian->count(),
+                        'total_pendapatan'  => $harian->sum('jumlah_pembayaran'),
+                    ],
+                    'bulanan' => [
+                        'bulan'             => $bulan,
+                        'tahun'             => $tahun,
+                        'jumlah_transaksi'  => $bulanan->count(),
+                        'total_pendapatan'  => $bulanan->sum('jumlah_pembayaran'),
+                    ],
+                    'tahunan' => [
+                        'tahun'            => $tahun,
+                        'jumlah_transaksi' => $tahunan->count(),
+                        'total_pendapatan' => $tahunan->sum('jumlah_pembayaran'),
+                    ],
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    /**
+     * Laporan Transaksi Berdasarkan Rentang Tanggal
+     */
+    public function laporan(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'tanggal_mulai' => 'required|date',
+                'tanggal_akhir' => 'required|date|after_or_equal:tanggal_mulai',
+            ]);
+
+            // Ambil semua pembayaran berhasil dalam rentang tanggal
+            $pembayaran = Pembayaran::with('transaksi')
+                ->whereDate('tanggal_pembayaran', '>=', $validated['tanggal_mulai'])
+                ->whereDate('tanggal_pembayaran', '<=', $validated['tanggal_akhir'])
+                ->where('status_pembayaran', 'berhasil')
+                ->get();
+
+            // Total transaksi
+            $totalTransaksi = $pembayaran->count();
+
+            // Pendapatan layanan → biaya dokter + perawat per transaksi
+            // dari API kelompok 2
+            $pendapatanLayanan = 0;
+            $pendapatanObat    = 0;
+
+            foreach ($pembayaran as $item) {
+                // Hit API kelompok 2 → biaya dokter
+                $dokterResponse = Http::get(env('K2_API_BASE_URL') . '/dokter/' . $item->transaksi->id_dokter);
+                if ($dokterResponse->successful()) {
+                    $pendapatanLayanan += $dokterResponse->json('data.biaya_layanan');
+                }
+
+                // Hit API kelompok 2 → biaya perawat
+                $perawatResponse = Http::get(env('K2_API_BASE_URL') . '/perawat/' . $item->transaksi->id_perawat);
+                if ($perawatResponse->successful()) {
+                    $pendapatanLayanan += $perawatResponse->json('data.biaya_layanan');
+                }
+
+                // Hit API kelompok 4 → total obat
+                if ($item->transaksi->id_resep) {
+                    $resepResponse = Http::get(env('K4_API_BASE_URL') . '/e-resep/' . $item->transaksi->id_resep);
+                    if ($resepResponse->successful()) {
+                        $resepData   = $resepResponse->json();
+                        $detailResep = $resepData[0]['detail_resep'] ?? [];
+
+                        foreach ($detailResep as $obat) {
+                            $pendapatanObat += $obat['JUMLAH'] * $obat['obat']['HARGA_JUAL'];
+                        }
+                    }
+                }
+            }
+
+            $totalPendapatan = $pendapatanLayanan + $pendapatanObat;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Laporan transaksi berhasil diambil',
+                'data'    => [
+                    'periode' => [
+                        'tanggal_mulai' => $validated['tanggal_mulai'],
+                        'tanggal_akhir' => $validated['tanggal_akhir'],
+                    ],
+                    'ringkasan' => [
+                        'total_transaksi'   => $totalTransaksi,
+                        'pendapatan_obat'   => $pendapatanObat,
+                        'pendapatan_layanan'=> $pendapatanLayanan,
+                        'total_pendapatan'  => $totalPendapatan,
+                    ],
+                    'tabel' => [
+                        ['no' => 1, 'keterangan' => 'Total Transaksi',    'jumlah' => $totalTransaksi],
+                        ['no' => 2, 'keterangan' => 'Pendapatan Obat',    'jumlah' => $pendapatanObat],
+                        ['no' => 3, 'keterangan' => 'Pendapatan Layanan', 'jumlah' => $pendapatanLayanan],
+                        ['no' => 4, 'keterangan' => 'Total Pendapatan',   'jumlah' => $totalPendapatan],
+                    ],
+                ],
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors'  => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
