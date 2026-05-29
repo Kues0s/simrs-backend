@@ -206,7 +206,7 @@ class TransaksiController extends Controller
             $validated = $request->validate([
                 'id_resep'    => 'sometimes|nullable|integer',
             ]);
-            
+
             $transaksi->update($validated);
 
             return response()->json([
@@ -257,7 +257,7 @@ class TransaksiController extends Controller
                 'success' => true,
                 'message' => 'Transaksi berhasil dihapus',
             ], 200);
-
+            
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
@@ -276,7 +276,7 @@ class TransaksiController extends Controller
     /**
      * Menampilkan Statistik Transaksi
      */
-   public function jumlahTransaksi()
+    public function StatistikTransaksi()
     {
         // Hitung transaksi hari ini
         $hariIni = Transaksi::whereDate('tanggal', Carbon::today())->count();
@@ -286,41 +286,54 @@ class TransaksiController extends Controller
                             ->whereYear('tanggal', Carbon::now()->year)
                             ->count();
 
-        // Gabungkan dalam satu response JSON
+        // Tambahan → total keseluruhan
+        $totalSemua = Transaksi::count();
+
+        // Tambahan → per status
+        $totalMenunggu = Transaksi::where('status', 'menunggu')->count();
+        $totalSelesai  = Transaksi::where('status', 'selesai')->count();
+
         return response()->json([
             'success' => true,
             'message' => 'Statistik Jumlah Transaksi',
-            'data' => [
+            'data'    => [
                 'total_hari_ini'  => $hariIni,
                 'total_bulan_ini' => $bulanIni,
-                // Kamu bisa tambah total_tahun_ini atau total_semua di sini nanti
+                'total_semua'     => $totalSemua,
+                'total_menunggu'  => $totalMenunggu,
+                'total_selesai'   => $totalSelesai,
             ]
-        ]);
+        ], 200);
     }
 
     /**
-     * Menampilkan Transaksi Berdasarkan id_rm
+     * Menampilkan Transaksi Berdasarkan id_antrian
      */
     public function getTransaksiByIdAntrian(String $id_antrian)
     {
         try {
-            $transaksi = Transaksi::where('id_antrian', $id_antrian)->with('pembayaran')
-            ->where('status', 'menunggu')
-            ->latest()
-            ->firstOrFail();
+            $transaksi = Transaksi::where('id_antrian', $id_antrian)
+                ->with('pembayaran')
+                ->where('status', 'menunggu')
+                ->latest()
+                ->firstOrFail();
 
-            // 1. Hit API kelompok 2 → biaya dokter
+            // 1. Hit API kelompok 2 → nama & biaya dokter
             $biayaDokter = 0;
-            $dokterResponse = Http::get(env('K2_API_BASE_URL') . '/dokter/' . $transaksi->id_dokter . '/biaya');
+            $namaDokter  = '-';
+            $dokterResponse = Http::get(env('K2_API_BASE_URL') . '/dokter/' . $transaksi->id_dokter);
             if ($dokterResponse->successful()) {
                 $biayaDokter = $dokterResponse->json('data.biaya_layanan');
+                $namaDokter  = $dokterResponse->json('data.nama_dokter');
             }
 
-            // 2. Hit API kelompok 2 → biaya perawat
+            // 2. Hit API kelompok 2 → nama & biaya perawat
             $biayaPerawat = 0;
-            $perawatResponse = Http::get(env('K2_API_BASE_URL') . '/perawat/' . $transaksi->id_perawat . '/biaya');
+            $namaPerawat  = '-';
+            $perawatResponse = Http::get(env('K2_API_BASE_URL') . '/perawat/' . $transaksi->id_perawat);
             if ($perawatResponse->successful()) {
                 $biayaPerawat = $perawatResponse->json('data.biaya_layanan');
+                $namaPerawat  = $perawatResponse->json('data.nama_perawat');
             }
 
             // 3. Hit API kelompok 4 → detail obat
@@ -328,21 +341,25 @@ class TransaksiController extends Controller
             $subtotalObat = 0;
 
             if ($transaksi->id_resep) {
-                $resepResponse = Http::get(env('K4_API_BASE_URL') . '/resep/' . $transaksi->id_resep);
+                $resepResponse = Http::get(env('K4_API_BASE_URL') . '/e-resep/' . $transaksi->id_resep);
                 if ($resepResponse->successful()) {
-                    $detailResep = $resepResponse->json('data.detail_resep');
+                    $resepData   = $resepResponse->json();
+                    $detailResep = $resepData[0]['detail_resep'] ?? [];
 
                     $detailObat = collect($detailResep)->map(function ($item) {
+                        $harga  = $item['obat']['HARGA_JUAL'] ?? 0;
+                        $jumlah = $item['JUMLAH'] ?? 0;
+
                         return [
-                            'id_obat'    => $item['id_obat'],
-                            'nama_obat'  => $item['nama_obat'],
-                            'jumlah'     => $item['jumlah'],
-                            'harga_jual' => $item['harga_jual'],
-                            'subtotal'   => $item['jumlah'] * $item['harga_jual'],
+                            'id_obat'     => $item['ID_OBAT'],
+                            'nama_obat'   => $item['obat']['NAMA_OBAT'],
+                            'jumlah'      => $jumlah,
+                            'harga_jual'  => $harga,
+                            'total_harga' => $jumlah * $harga,
                         ];
                     });
 
-                    $subtotalObat = $detailObat->sum('subtotal');
+                    $subtotalObat = $detailObat->sum('total_harga');
                 }
             }
 
@@ -353,25 +370,27 @@ class TransaksiController extends Controller
                 'success' => true,
                 'message' => 'Transaksi berhasil ditemukan',
                 'data'    => [
-                    'transaksi' => [
+                    'transaksi'   => [
                         'id_transaksi' => $transaksi->id_transaksi,
                         'pasien_id'    => $transaksi->pasien_id,
                         'id_rm'        => $transaksi->id_rm,
                         'id_antrian'   => $transaksi->id_antrian,
-                        'id_dokter'   => $transaksi->id_dokter,
-                        'id_perawat'  => $transaksi->id_perawat,
-                        'id_resep'    => $transaksi->id_resep,
+                        'id_dokter'    => $transaksi->id_dokter,
+                        'nama_dokter'  => $namaDokter,
+                        'id_perawat'   => $transaksi->id_perawat,
+                        'nama_perawat' => $namaPerawat,
+                        'id_resep'     => $transaksi->id_resep,
                         'tanggal'      => $transaksi->tanggal,
                         'status'       => $transaksi->status,
                     ],
                     'detail_obat' => $detailObat,
-                    'ringkasan'      => [
-                        'biaya_dokter' => $biayaDokter,
+                    'ringkasan'   => [
+                        'biaya_dokter'  => $biayaDokter,
                         'biaya_perawat' => $biayaPerawat,
-                        'subtotal_obat'    => $subtotalObat,
-                        'total_bayar'      => $totalBayar,
+                        'subtotal_obat' => $subtotalObat,
+                        'total_bayar'   => $totalBayar,
                     ],
-                    'pembayaran'     => $transaksi->pembayaran,
+                    'pembayaran'  => $transaksi->pembayaran,
                 ],
             ], 200);
 

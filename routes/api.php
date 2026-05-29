@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 
 
 //API Transaksi
-Route::get('/transaksi/jumlah-transaksi', [TransaksiController::class, 'jumlahTransaksi']);
+Route::get('/transaksi/statistik', [TransaksiController::class, 'StatistikTransaksi']);
 Route::get('/transaksi', [TransaksiController::class, 'index']);
 Route::post('/transaksi', [TransaksiController::class, 'store']);
 Route::get('/transaksi/{id_transaksi}', [TransaksiController::class, 'show']);
