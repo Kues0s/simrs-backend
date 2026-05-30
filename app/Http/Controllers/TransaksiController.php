@@ -271,41 +271,7 @@ class TransaksiController extends Controller
             ], 500);
         }
     }
-
-
-    /**
-     * Menampilkan Statistik Transaksi
-     */
-    public function StatistikTransaksi()
-    {
-        // Hitung transaksi hari ini
-        $hariIni = Transaksi::whereDate('tanggal', Carbon::today())->count();
-
-        // Hitung transaksi bulan ini
-        $bulanIni = Transaksi::whereMonth('tanggal', Carbon::now()->month)
-                            ->whereYear('tanggal', Carbon::now()->year)
-                            ->count();
-
-        // Tambahan → total keseluruhan
-        $totalSemua = Transaksi::count();
-
-        // Tambahan → per status
-        $totalMenunggu = Transaksi::where('status', 'menunggu')->count();
-        $totalSelesai  = Transaksi::where('status', 'selesai')->count();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Statistik Jumlah Transaksi',
-            'data'    => [
-                'total_hari_ini'  => $hariIni,
-                'total_bulan_ini' => $bulanIni,
-                'total_semua'     => $totalSemua,
-                'total_menunggu'  => $totalMenunggu,
-                'total_selesai'   => $totalSelesai,
-            ]
-        ], 200);
-    }
-
+    
     /**
      * Menampilkan Transaksi Berdasarkan id_antrian
      */

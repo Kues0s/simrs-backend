@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Route;
 
 
 //API Transaksi
-Route::get('/transaksi/statistik', [TransaksiController::class, 'StatistikTransaksi']);
 Route::get('/transaksi', [TransaksiController::class, 'index']);
 Route::post('/transaksi', [TransaksiController::class, 'store']);
 Route::get('/transaksi/{id_transaksi}', [TransaksiController::class, 'show']);
@@ -21,12 +20,13 @@ Route::get('/transaksi/{id_antrian}/antrian', [TransaksiController::class, 'getT
 
 
 //API Pembayaran
-Route::get('/pembayaran/statistik', [PembayaranController::class, 'Statistik']);
 Route::get('/pembayaran', [PembayaranController::class, 'index']);
 Route::post('/pembayaran', [PembayaranController::class, 'store']);
 Route::get('/pembayaran/{id_pembayaran}', [PembayaranController::class, 'show']);
 Route::put('/pembayaran/{id_pembayaran}', [PembayaranController::class, 'update']);
 Route::delete('/pembayaran/{id_pembayaran}', [PembayaranController::class, 'destroy']);
+Route::get('/pembayaran/statistik', [PembayaranController::class, 'Statistik']);
+Route::get('pembayaran/laporan', [PembayaranController::class, 'laporan']);
 
 //API Antrian_Pembayaran
 Route::get('/antrian_pembayaran', [AntrianPembayaranController::class, 'index']);
