@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\AntrianPembayaran;
 use App\Models\Transaksi;
 use Carbon\Carbon;
 use Exception;
@@ -14,7 +15,7 @@ class TransaksiController extends Controller
     /**
      * Menampilkan List Data Transaksi.
      */
-    public function index()
+    public function index(): \Illuminate\Http\JsonResponse
     {
         try{
             $transaksi = Transaksi::with('pembayaran')->get();
@@ -35,7 +36,7 @@ class TransaksiController extends Controller
     /**
      * Menambahkan Data Transaksi Baru.
      */
-    public function store(Request $request)
+    public function store(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
             $validated = $request->validate([
@@ -73,6 +74,14 @@ class TransaksiController extends Controller
                 'status'     => 'menunggu',
             ]);
 
+            // 4. Tambahkan ke antrian pembayaran
+            $antrian = AntrianPembayaran::create([
+                'id_transaksi' => $transaksi->id_transaksi,
+                'no_pembayaran' => AntrianPembayaran::whereDate('waktu_masuk', Carbon::today())->count() + 1,
+                'status_antrian' => 'menunggu',
+                'waktu_masuk' => Carbon::now()->toDateTimeString(),
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Transaksi berhasil dibuat',
@@ -102,11 +111,16 @@ class TransaksiController extends Controller
     /**
      * Menampilkan Data Transaksi Tertentu
      */
-    public function show($id_transaksi)
+    public function show($id_transaksi): \Illuminate\Http\JsonResponse
     {
         try {
             $transaksi = Transaksi::with('pembayaran',)->findOrFail($id_transaksi);
-
+            //0. Hit API Kelompok 1 -> nama pasien
+            $namaPasien = '-';
+            $pasienResponse = Http::get(env('K1_API_BASE_URL') . '/pasien/' . $transaksi->pasien_id);
+            if ($pasienResponse->successful()) {
+                $namaPasien = $pasienResponse->json('data.nama_pasien');
+            }
             // 1. Hit API kelompok 2 → biaya dokter
             $biayaDokter = 0;
             $namaDokter = '-';
@@ -158,6 +172,7 @@ class TransaksiController extends Controller
                     'transaksi' => [
                         'id_transaksi' => $transaksi->id_transaksi,
                         'pasien_id'    => $transaksi->pasien_id,
+                        'nama_pasien'  => $namaPasien,
                         'id_rm'        => $transaksi->id_rm,
                         'id_antrian'   => $transaksi->id_antrian,
                         'id_dokter'   => $transaksi->id_dokter,
@@ -190,7 +205,7 @@ class TransaksiController extends Controller
     /**
      * Memperbaharui Data Transaksi Berdasarkan id_transaksi
      */
-    public function update(Request $request, $id_transaksi)
+    public function update(Request $request, $id_transaksi): \Illuminate\Http\JsonResponse
     {
         try {
             $transaksi = Transaksi::findOrFail($id_transaksi);
@@ -239,7 +254,7 @@ class TransaksiController extends Controller
     /**
      * Menghapus Data Transaksi
      */
-    public function destroy($id_transaksi)
+    public function destroy($id_transaksi): \Illuminate\Http\JsonResponse
     {
         try {
             $transaksi = Transaksi::findOrFail($id_transaksi);
@@ -275,7 +290,7 @@ class TransaksiController extends Controller
     /**
      * Menampilkan Transaksi Berdasarkan id_antrian
      */
-    public function getTransaksiByIdAntrian(String $id_antrian)
+    public function getTransaksiByIdAntrian(String $id_antrian): \Illuminate\Http\JsonResponse
     {
         try {
             $transaksi = Transaksi::where('id_antrian', $id_antrian)
@@ -283,6 +298,14 @@ class TransaksiController extends Controller
                 ->where('status', 'menunggu')
                 ->latest()
                 ->firstOrFail();
+
+            //0. Hit API Kelompok 1 -> nama pasien
+            $namaPasien = '-';
+            $pasienResponse = Http::get(env('K1_API_BASE_URL') . '/pasien/' . $transaksi->pasien_id);
+            if ($pasienResponse->successful()) {
+                $namaPasien = $pasienResponse->json('data.nama_pasien');
+            }
+
 
             // 1. Hit API kelompok 2 → nama & biaya dokter
             $biayaDokter = 0;
@@ -339,6 +362,7 @@ class TransaksiController extends Controller
                     'transaksi'   => [
                         'id_transaksi' => $transaksi->id_transaksi,
                         'pasien_id'    => $transaksi->pasien_id,
+                        'nama_pasien'  => $namaPasien,
                         'id_rm'        => $transaksi->id_rm,
                         'id_antrian'   => $transaksi->id_antrian,
                         'id_dokter'    => $transaksi->id_dokter,

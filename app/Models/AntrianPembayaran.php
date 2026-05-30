@@ -27,6 +27,10 @@ class AntrianPembayaran extends Model
         'waktu_masuk' => 'datetime',
     ];
 
+    protected $attributes = [
+        'status_antrian' => 'menunggu',
+    ];
+
     public function transaksi()
     {
         return $this->belongsTo(Transaksi::class, 'id_transaksi', 'id_transaksi');

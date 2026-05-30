@@ -22,15 +22,15 @@ Route::get('/transaksi/{id_antrian}/antrian', [TransaksiController::class, 'getT
 //API Pembayaran
 Route::get('/pembayaran', [PembayaranController::class, 'index']);
 Route::post('/pembayaran', [PembayaranController::class, 'store']);
+Route::get('/pembayaran/statistik', [PembayaranController::class, 'statistik']);
+Route::get('pembayaran/laporan', [PembayaranController::class, 'laporan']);
 Route::get('/pembayaran/{id_pembayaran}', [PembayaranController::class, 'show']);
 Route::put('/pembayaran/{id_pembayaran}', [PembayaranController::class, 'update']);
 Route::delete('/pembayaran/{id_pembayaran}', [PembayaranController::class, 'destroy']);
-Route::get('/pembayaran/statistik', [PembayaranController::class, 'Statistik']);
-Route::get('pembayaran/laporan', [PembayaranController::class, 'laporan']);
 
 //API Antrian_Pembayaran
-Route::get('/antrian_pembayaran', [AntrianPembayaranController::class, 'index']);
-Route::post('/antrian_pembayaran', [AntrianPembayaranController::class, 'store']);
-Route::get('/antrian_pembayaran/{id_antrian_pay}', [AntrianPembayaranController::class, 'show']);
-Route::put('/antrian_pembayaran/{id_antrian_pay}', [AntrianPembayaranController::class, 'update']);
-Route::delete('/antrian_pembayaran/{id_antrian_pay}', [AntrianPembayaranController::class, 'destroy']);
+Route::get('/antrian-pembayaran', [AntrianPembayaranController::class, 'index']);
+Route::get('/antrian-pembayaran/skip', [AntrianPembayaranController::class, 'indexSkip']);
+Route::get('/antrian-pembayaran/statistik', [AntrianPembayaranController::class, 'statistik']);
+Route::put('/antrian-pembayaran/{id}/panggil', [AntrianPembayaranController::class, 'panggil']);
+Route::put('/antrian-pembayaran/{id}/skip', [AntrianPembayaranController::class, 'skip']);

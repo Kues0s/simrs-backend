@@ -16,7 +16,7 @@ class PembayaranController extends Controller
     /**
      * Menampilkan List Pembayaran
      */
-    public function index()
+    public function index(): \Illuminate\Http\JsonResponse
     {
         $pembayaran = Pembayaran::with('transaksi')->get();
         return response()->json([
@@ -30,7 +30,7 @@ class PembayaranController extends Controller
     /**
      * Menambahkan Data Pembayaran 
      */
-   public function store(Request $request)
+   public function store(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
             $validated = $request->validate([
@@ -139,7 +139,7 @@ class PembayaranController extends Controller
     /**
      * Menampilkan Data Pembayaran Tertentu
      */
-   public function show(String $id_pembayaran)
+   public function show(String $id_pembayaran): \Illuminate\Http\JsonResponse
     {
         try {
             $pembayaran = Pembayaran::with('transaksi')->findOrFail($id_pembayaran);
@@ -167,7 +167,7 @@ class PembayaranController extends Controller
     /**
      * Update Data Pembayaran
      */
-    public function update(Request $request, String $id_pembayaran)
+    public function update(Request $request, String $id_pembayaran): \Illuminate\Http\JsonResponse
     {
         try {
             $validated = $request->validate([
@@ -217,7 +217,7 @@ class PembayaranController extends Controller
     /**
      * Menghapus Data Pembayaran
      */
-    public function destroy(String $id_pembayaran)
+    public function destroy(String $id_pembayaran): \Illuminate\Http\JsonResponse
     {
         try {
             $pembayaran = Pembayaran::findOrFail($id_pembayaran);
@@ -254,7 +254,7 @@ class PembayaranController extends Controller
     /**
      * Statistik Laporan Pembayaran Harian, Bulanan, Tahunan
      */
-    public function statistik(Request $request)
+    public function statistik(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
             $bulan = $request->query('bulan', Carbon::now()->month);
@@ -314,7 +314,7 @@ class PembayaranController extends Controller
     /**
      * Laporan Transaksi Berdasarkan Rentang Tanggal
      */
-    public function laporan(Request $request)
+    public function laporan(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
             $validated = $request->validate([
