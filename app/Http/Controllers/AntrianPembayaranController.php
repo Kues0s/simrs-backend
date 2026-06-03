@@ -18,10 +18,34 @@ class AntrianPembayaranController extends Controller
             ->orderBy('no_pembayaran', 'asc')
             ->get();
 
+        $data = $antrian->map(function($item){
+            $nama_pasien = "-";
+            $nama_poli = "-";
+
+            if($item->transaksi && $item->transaksi->pasien_id){
+                $response = Http::get(env('K1_API_BASE_URL') . '/pasien/' . $item->transaksi->pasien_id);
+
+                if($response->successful()){
+                    $data = $response->json();
+                    $nama_pasien = $data['data']['nama_pasien'] ?? "-";
+                    $nama_poli = $data['data']['nama_poli'] ?? "-";
+                }
+            }
+
+            return [
+                'id_antrian_pay'  => $item->id_antrian_pay,
+                'no_pembayaran'   => $item->no_pembayaran,
+                'status_antrian'  => $item->status_antrian,
+                'nama_pasien'     => $nama_pasien,
+                'nama_poli'       => $nama_poli,
+                'waktu_masuk'     => $item->waktu_masuk->format('H:i:s'),
+            ];
+        });
+
         return response()->json([
             'success' => true,
             'message' => 'Daftar antrian pembayaran',
-            'data'    => $antrian,
+            'data'    => $data,
         ], 200);
     }
 
@@ -35,10 +59,34 @@ class AntrianPembayaranController extends Controller
             ->orderBy('no_pembayaran', 'asc')
             ->get();
 
+        $data = $antrian->map(function($item){
+            $nama_pasien = "-";
+            $nama_poli = "-";
+
+            if($item->transaksi && $item->transaksi->pasien_id){
+                $response = Http::get(env('K1_API_BASE_URL') . '/pasien/' . $item->transaksi->pasien_id);
+
+                if($response->successful()){
+                    $data = $response->json();
+                    $nama_pasien = $data['data']['nama_pasien'] ?? "-";
+                    $nama_poli = $data['data']['nama_poli'] ?? "-";
+                }
+            }
+
+            return [
+                'id_antrian_pay'  => $item->id_antrian_pay,
+                'no_pembayaran'   => $item->no_pembayaran,
+                'status_antrian'  => $item->status_antrian,
+                'nama_pasien'     => $nama_pasien,
+                'nama_poli'       => $nama_poli,
+                'waktu_masuk'     => $item->waktu_masuk->format('H:i:s'),
+            ];
+        });
+
         return response()->json([
             'success' => true,
             'message' => 'Daftar antrian skip',
-            'data'    => $antrian,
+            'data'    => $data,
         ], 200);
     }
 
