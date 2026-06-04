@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\K1ApiHelper;
 use App\Models\AntrianPembayaran;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -18,27 +19,25 @@ class AntrianPembayaranController extends Controller
             ->orderBy('no_pembayaran', 'asc')
             ->get();
 
-        $data = $antrian->map(function($item){
-            $nama_pasien = "-";
-            $nama_poli = "-";
+       $data = $antrian->map(function ($item) {
+            $namaPasien = '-';
+            $poli       = '-';
 
-            if($item->transaksi && $item->transaksi->pasien_id){
-                $response = Http::get(env('K1_API_BASE_URL') . '/pasien/' . $item->transaksi->pasien_id);
-
-                if($response->successful()){
-                    $data = $response->json();
-                    $nama_pasien = $data['data']['nama_pasien'] ?? "-";
-                    $nama_poli = $data['data']['nama_poli'] ?? "-";
-                }
+            if ($item->transaksi && $item->transaksi->pasien_id) {
+                $pasien     = K1ApiHelper::getPasien($item->transaksi->pasien_id);
+                $namaPasien = $pasien['nama_pasien'];
+                $poli   = $pasien['nama_poli'];
             }
 
             return [
-                'id_antrian_pay'  => $item->id_antrian_pay,
-                'no_pembayaran'   => $item->no_pembayaran,
-                'status_antrian'  => $item->status_antrian,
-                'nama_pasien'     => $nama_pasien,
-                'nama_poli'       => $nama_poli,
-                'waktu_masuk'     => $item->waktu_masuk->format('H:i:s'),
+                'id_antrian_pay' => $item->id_antrian_pay,
+                'no_pembayaran'  => $item->no_pembayaran,
+                'status_antrian' => $item->status_antrian,
+                'waktu_masuk'    => $item->waktu_masuk,
+                'nama_pasien'    => $namaPasien,
+                'poli'           => $poli,
+                'id_transaksi'   => $item->id_transaksi,
+                'id_antrian'   => $item->transaksi->id_antrian,
             ];
         });
 
@@ -59,27 +58,22 @@ class AntrianPembayaranController extends Controller
             ->orderBy('no_pembayaran', 'asc')
             ->get();
 
-        $data = $antrian->map(function($item){
-            $nama_pasien = "-";
-            $nama_poli = "-";
+       $data = $antrian->map(function ($item) {
+            $namaPasien = '-';
+            $namaPoli   = '-';
 
-            if($item->transaksi && $item->transaksi->pasien_id){
-                $response = Http::get(env('K1_API_BASE_URL') . '/pasien/' . $item->transaksi->pasien_id);
-
-                if($response->successful()){
-                    $data = $response->json();
-                    $nama_pasien = $data['data']['nama_pasien'] ?? "-";
-                    $nama_poli = $data['data']['nama_poli'] ?? "-";
-                }
+            if ($item->transaksi && $item->transaksi->pasien_id) {
+                $pasien     = K1ApiHelper::getPasien($item->transaksi->pasien_id);
+                $namaPasien = $pasien['nama_pasien'];
+                $namaPoli   = $pasien['nama_poli'];
             }
-
             return [
-                'id_antrian_pay'  => $item->id_antrian_pay,
-                'no_pembayaran'   => $item->no_pembayaran,
-                'status_antrian'  => $item->status_antrian,
-                'nama_pasien'     => $nama_pasien,
-                'nama_poli'       => $nama_poli,
-                'waktu_masuk'     => $item->waktu_masuk->format('H:i:s'),
+                'id_antrian_pay' => $item->id_antrian_pay,
+                'no_pembayaran'  => $item->no_pembayaran,
+                'status_antrian' => $item->status_antrian,
+                'nama_pasien'    => $namaPasien,
+                'nama_poli'      => $namaPoli,
+                'waktu_masuk'    => $item->waktu_masuk->format('H:i:s'),
             ];
         });
 
@@ -190,4 +184,44 @@ class AntrianPembayaranController extends Controller
         }
     }
 
+    /**
+     * Menampilkan Data Antrian Pembayaran Tertentu Berdasarkan ID Antrian Pay.
+     */
+    public function showById($id): \Illuminate\Http\JsonResponse
+    {
+        try{
+            $antrian = AntrianPembayaran::with('transaksi')->findOrFail($id);
+
+            $namaPasien = '-';
+            $poli       = '-';
+
+            if ($antrian->transaksi && $antrian->transaksi->pasien_id) {
+                $pasien     = K1ApiHelper::getPasien($antrian->transaksi->pasien_id);
+                $namaPasien = $pasien['nama_pasien'];
+                $poli   = $pasien['nama_poli'];
+            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Data antrian',
+                'data'    => [
+                    'nama_pasien' => $namaPasien,
+                    'poli' => $poli,
+                    'id_transaksi' => $antrian->transaksi->id_transaksi,
+                    'id_antrian' => $antrian->transaksi->id_antrian,
+                    'antrian' => $antrian,
+                ],
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data antrian tidak ditemukan',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

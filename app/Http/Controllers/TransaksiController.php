@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\K1ApiHelper;
 use App\Http\Controllers\Controller;
 use App\Models\AntrianPembayaran;
 use App\Models\Transaksi;
@@ -115,12 +116,12 @@ class TransaksiController extends Controller
     {
         try {
             $transaksi = Transaksi::with('pembayaran',)->findOrFail($id_transaksi);
+
             //0. Hit API Kelompok 1 -> nama pasien
-            $namaPasien = '-';
-            $pasienResponse = Http::get(env('K1_API_BASE_URL') . '/pasien/' . $transaksi->pasien_id);
-            if ($pasienResponse->successful()) {
-                $namaPasien = $pasienResponse->json('data.nama_pasien');
-            }
+            $pasien     = K1ApiHelper::getPasien($transaksi->pasien_id);
+            $namaPasien = $pasien['nama_pasien'];
+            $namaPoli   = $pasien['nama_poli'];
+
             // 1. Hit API kelompok 2 → biaya dokter
             $biayaDokter = 0;
             $namaDokter = '-';
@@ -173,6 +174,7 @@ class TransaksiController extends Controller
                         'id_transaksi' => $transaksi->id_transaksi,
                         'pasien_id'    => $transaksi->pasien_id,
                         'nama_pasien'  => $namaPasien,
+                        'nama_poli'  => $namaPoli,
                         'id_rm'        => $transaksi->id_rm,
                         'id_antrian'   => $transaksi->id_antrian,
                         'id_dokter'   => $transaksi->id_dokter,
@@ -299,13 +301,10 @@ class TransaksiController extends Controller
                 ->latest()
                 ->firstOrFail();
 
-            //0. Hit API Kelompok 1 -> nama pasien
-            $namaPasien = '-';
-            $pasienResponse = Http::get(env('K1_API_BASE_URL') . '/pasien/' . $transaksi->pasien_id);
-            if ($pasienResponse->successful()) {
-                $namaPasien = $pasienResponse->json('data.nama_pasien');
-            }
-
+            //0. Hit API Kelompok 1 -> nama pasien & poli
+            $pasien     = K1ApiHelper::getPasien($transaksi->pasien_id);
+            $namaPasien = $pasien['nama_pasien'];
+            $namaPoli   = $pasien['nama_poli'];
 
             // 1. Hit API kelompok 2 → nama & biaya dokter
             $biayaDokter = 0;
@@ -363,6 +362,7 @@ class TransaksiController extends Controller
                         'id_transaksi' => $transaksi->id_transaksi,
                         'pasien_id'    => $transaksi->pasien_id,
                         'nama_pasien'  => $namaPasien,
+                        'nama_poli'    => $namaPoli,
                         'id_rm'        => $transaksi->id_rm,
                         'id_antrian'   => $transaksi->id_antrian,
                         'id_dokter'    => $transaksi->id_dokter,
