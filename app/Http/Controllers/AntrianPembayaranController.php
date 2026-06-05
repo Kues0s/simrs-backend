@@ -33,11 +33,11 @@ class AntrianPembayaranController extends Controller
                 'id_antrian_pay' => $item->id_antrian_pay,
                 'no_pembayaran'  => $item->no_pembayaran,
                 'status_antrian' => $item->status_antrian,
-                'waktu_masuk'    => $item->waktu_masuk,
+                'waktu_masuk'    => $item->waktu_masuk->format('Y-m-d H:i:s'),
                 'nama_pasien'    => $namaPasien,
                 'poli'           => $poli,
                 'id_transaksi'   => $item->id_transaksi,
-                'id_antrian'   => $item->transaksi->id_antrian,
+                'id_antrian'   => $item->transaksi->id_antrian ?? null,
             ];
         });
 
@@ -73,7 +73,8 @@ class AntrianPembayaranController extends Controller
                 'status_antrian' => $item->status_antrian,
                 'nama_pasien'    => $namaPasien,
                 'nama_poli'      => $namaPoli,
-                'waktu_masuk'    => $item->waktu_masuk->format('H:i:s'),
+                'waktu_masuk'    => $item->waktu_masuk->format('Y-m-d H:i:s'),
+                'id_antrian'   => $item->transaksi->id_antrian ?? null,
             ];
         });
 
@@ -89,11 +90,11 @@ class AntrianPembayaranController extends Controller
      */
     public function statistik(): \Illuminate\Http\JsonResponse
     {
-        $total      = AntrianPembayaran::whereDate('waktu_masuk', Carbon::today())->count();
-        $menunggu   = AntrianPembayaran::where('status_antrian', 'menunggu')->count();
-        $dipanggil  = AntrianPembayaran::where('status_antrian', 'dipanggil')->count();
-        $selesai    = AntrianPembayaran::where('status_antrian', 'selesai')->count();
-        $tidakHadir = AntrianPembayaran::where('status_antrian', 'tidak_hadir')->count();
+        $total = AntrianPembayaran::whereDate('waktu_masuk', Carbon::today())->count();
+        $menunggu = AntrianPembayaran::whereDate('waktu_masuk', Carbon::today())->where('status_antrian', 'menunggu')->count();
+        $dipanggil  = AntrianPembayaran::whereDate('waktu_masuk', Carbon::today())->where('status_antrian', 'dipanggil')->count();
+        $selesai    = AntrianPembayaran::whereDate('waktu_masuk', Carbon::today())->where('status_antrian', 'selesai')->count();
+        $tidakHadir = AntrianPembayaran::whereDate('waktu_masuk', Carbon::today())->where('status_antrian', 'tidak_hadir')->count();
 
         return response()->json([
             'success' => true,
@@ -223,5 +224,58 @@ class AntrianPembayaranController extends Controller
                 'error'   => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Menampilkan Data Antrian Pembayaran yang sedang Dilayani.
+     */
+    public function sedangDilayani(): \Illuminate\Http\JsonResponse
+    {
+        // Cek apakah ada yang sedang dipanggil
+        $antrian = AntrianPembayaran::with('transaksi')
+            ->where('status_antrian', 'dipanggil')
+            ->orderBy('no_pembayaran', 'asc')
+            ->first();
+
+        // Jika tidak ada yang dipanggil → ambil yang menunggu pertama
+        if (!$antrian) {
+            $antrian = AntrianPembayaran::with('transaksi')
+                ->where('status_antrian', 'menunggu')
+                ->orderBy('no_pembayaran', 'asc')
+                ->first();
+        }
+
+        // Jika tidak ada sama sekali
+        if (!$antrian) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Tidak ada antrian',
+                'data'    => null,
+            ], 200);
+        }
+
+        $namaPasien = '-';
+        $poli       = '-';
+
+        if ($antrian->transaksi && $antrian->transaksi->pasien_id) {
+            $pasien     = K1ApiHelper::getPasien($antrian->transaksi->pasien_id);
+            $namaPasien = $pasien['nama_pasien'];
+            $poli       = $pasien['nama_poli'];
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Antrian sedang dilayani',
+            'data'    => [
+                'id_antrian_pay' => $antrian->id_antrian_pay,
+                'no_pembayaran'  => $antrian->no_pembayaran,
+                'status_antrian' => $antrian->status_antrian,
+                'waktu_masuk'    => $antrian->waktu_masuk->format('Y-m-d H:i:s'),
+                'nama_pasien'    => $namaPasien,
+                'poli'           => $poli,
+                'id_transaksi'   => $antrian->transaksi->id_transaksi ?? null,
+                'id_antrian'     => $antrian->transaksi->id_antrian ?? null,
+            ],
+        ], 200);
     }
 }

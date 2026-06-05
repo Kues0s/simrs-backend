@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\K1ApiHelper;
+use App\Models\AntrianPembayaran;
 use App\Models\Pembayaran;
 use App\Models\Transaksi;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
@@ -26,7 +29,6 @@ class PembayaranController extends Controller
         ], 200);
     }
 
-
     /**
      * Menambahkan Data Pembayaran 
      */
@@ -36,13 +38,12 @@ class PembayaranController extends Controller
             $validated = $request->validate([
                 'id_transaksi'      => 'required|integer|exists:transaksi,id_transaksi',
                 'metode'            => 'required|in:cash,qris,debit',
-                'total_tagihan'     => 'required|numeric|min:0', 
+                'total_tagihan'     => 'required|numeric|min:0',
                 'jumlah_pembayaran' => 'required|numeric|min:0',
             ]);
 
             // Cek transaksi
             $transaksi = Transaksi::findOrFail($validated['id_transaksi']);
-
             if ($transaksi->status === 'selesai') {
                 return response()->json([
                     'success' => false,
@@ -64,7 +65,7 @@ class PembayaranController extends Controller
             }
 
             // Hitung kembalian
-            $kembalian = $validated['jumlah_pembayaran'] - $validated['total_tagihan']; 
+            $kembalian = $validated['jumlah_pembayaran'] - $validated['total_tagihan'];
 
             DB::beginTransaction();
 
@@ -80,14 +81,26 @@ class PembayaranController extends Controller
             // 2. Update status transaksi → selesai
             $transaksi->update(['status' => 'selesai']);
 
-            // 3. Hit API kelompok 1 → update status antrian
+            // 3. Hit API kelompok 1 → update status antrian → lunas
             if ($transaksi->id_antrian) {
-                $antriResponse = Http::put(env('K1_API_BASE_URL') . '/antrian/' . $transaksi->id_antrian . '/status',['status' => 'lunas'] 
+                $token         = K1ApiHelper::getToken();
+                $antriResponse = Http::withToken($token)->put(
+                    env('K1_API_BASE_URL') . '/antrian/' . $transaksi->id_antrian . '/status',
+                    ['status' => 'lunas']
                 );
+
+                // ✅ Token expired → refresh & coba lagi
+                if ($antriResponse->status() === 401) {
+                    Cache::forget('k1_token');
+                    $token         = K1ApiHelper::getToken();
+                    $antriResponse = Http::withToken($token)->put(
+                        env('K1_API_BASE_URL') . '/antrian/' . $transaksi->id_antrian . '/status',
+                        ['status' => 'lunas']
+                    );
+                }
 
                 if ($antriResponse->failed()) {
                     DB::rollBack();
-
                     return response()->json([
                         'success' => false,
                         'message' => 'Pembayaran gagal karena tidak dapat mengupdate status antrian',
@@ -98,26 +111,55 @@ class PembayaranController extends Controller
 
             DB::commit();
 
+            //  Update status antrian kasir → selesai
+            $antrianKasir = AntrianPembayaran::where('id_transaksi', $transaksi->id_transaksi)->first();
+            if ($antrianKasir) {
+                $antrianKasir->update(['status_antrian' => 'selesai']);
+            }
+
+            //Ambil antrian berikutnya
+            $antrianBerikutnya = AntrianPembayaran::with('transaksi')
+                ->where('status_antrian', 'menunggu')
+                ->orderBy('no_pembayaran', 'asc')
+                ->first();
+
+            $namaBerikutnya = '-';
+            $poliBerikutnya = '-';
+
+            if ($antrianBerikutnya && $antrianBerikutnya->transaksi) {
+                $pasien         = K1ApiHelper::getPasien($antrianBerikutnya->transaksi->pasien_id);
+                $namaBerikutnya = $pasien['nama_pasien'];
+                $poliBerikutnya = $pasien['nama_poli'];
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Pembayaran berhasil',
                 'data'    => [
-                    'pembayaran' => [
+                    'pembayaran'         => [
                         'id_pembayaran'      => $pembayaran->id_pembayaran,
                         'id_transaksi'       => $pembayaran->id_transaksi,
                         'metode'             => $pembayaran->metode,
-                        'total_tagihan'      => $validated['total_tagihan'], 
+                        'total_tagihan'      => $validated['total_tagihan'],
                         'jumlah_pembayaran'  => $pembayaran->jumlah_pembayaran,
                         'kembalian'          => $kembalian,
                         'status_pembayaran'  => $pembayaran->status_pembayaran,
                         'tanggal_pembayaran' => $pembayaran->tanggal_pembayaran,
                     ],
-                    'transaksi'  => [
+                    'transaksi'          => [
                         'id_transaksi' => $transaksi->id_transaksi,
                         'status'       => 'selesai',
                     ],
+                    'antrian_berikutnya' => $antrianBerikutnya ? [
+                        'id_antrian_pay' => $antrianBerikutnya->id_antrian_pay,
+                        'no_pembayaran'  => $antrianBerikutnya->no_pembayaran,
+                        'nama_pasien'    => $namaBerikutnya,
+                        'nama_poli'      => $poliBerikutnya,
+                        'id_antrian'     => $antrianBerikutnya->transaksi->id_antrian ?? null,
+                    ] : null,
                 ],
             ], 201);
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             return response()->json([

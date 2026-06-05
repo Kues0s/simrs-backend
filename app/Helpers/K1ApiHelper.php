@@ -68,5 +68,5 @@ class K1ApiHelper
             'nama_pasien' => $namaPasien,
             'nama_poli'   => $namaPoli,
         ];
-    }
+    }  
 }
