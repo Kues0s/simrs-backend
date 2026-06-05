@@ -88,6 +88,7 @@ class TransaksiController extends Controller
                 'message' => 'Transaksi berhasil dibuat',
                 'data'    => [
                     'transaksi'     => $transaksi,
+                    'antrian' => $antrian,
                     'biaya_dokter'  => $biayaDokter,
                     'biaya_perawat' => $biayaPerawat,
                     'subtotal_jasa' => $biayaDokter + $biayaPerawat,
