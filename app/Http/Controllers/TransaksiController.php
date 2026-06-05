@@ -19,11 +19,34 @@ class TransaksiController extends Controller
     public function index(): \Illuminate\Http\JsonResponse
     {
         try{
-            $transaksi = Transaksi::with('pembayaran')->get();
+            $transaksi = Transaksi::with('pembayaran')
+            ->where('status', 'selesai')
+            ->get();
+            
+            //0. Hit API Kelompok 1 → nama pasien dan nama poli
+            $data = $transaksi->map(function ($item) {
+                $namaPasien = '-';
+                $namaPoli   = '-';
+
+                try {
+                    $pasien     = K1ApiHelper::getPasien($item->pasien_id);
+                    $namaPasien = $pasien['nama_pasien'] ?? '-';
+                    $namaPoli   = $pasien['nama_poli'] ?? '-';
+                } catch (\Exception $e) {
+                    // Jika API gagal, tetap lanjut dengan nilai default
+                }
+
+                $itemArray = $item->toArray();
+                $itemArray['nama_pasien'] = $namaPasien;
+                $itemArray['nama_poli']   = $namaPoli;
+
+                return $itemArray;
+            });
+
             return response()->json([
                 'success' => true,
                 'message' => 'Data Transaksi',
-                'data' => $transaksi
+                'data' => $data,
             ],200);
         } catch(\Exception $e){
             return response()->json([
