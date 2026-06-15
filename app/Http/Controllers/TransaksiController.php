@@ -172,7 +172,7 @@ class TransaksiController extends Controller
                 $resepResponse = Http::get(env('K4_API_BASE_URL') . '/e-resep/' . $transaksi->id_resep);
                 if ($resepResponse->successful()) {
                     $resepData = $resepResponse->json();
-                    $detailResep = $resepData[0]['detail_resep'] ?? [];
+                    $detailResep = $resepData['detail_resep'] ?? [];
                     $detailObat = collect($detailResep)->map(function ($item) {
                         return [
                             'id_obat'    => $item['ID_OBAT'],
@@ -356,7 +356,7 @@ class TransaksiController extends Controller
                 $resepResponse = Http::get(env('K4_API_BASE_URL') . '/e-resep/' . $transaksi->id_resep);
                 if ($resepResponse->successful()) {
                     $resepData   = $resepResponse->json();
-                    $detailResep = $resepData[0]['detail_resep'] ?? [];
+                    $detailResep = $resepData['detail_resep'] ?? [];
 
                     $detailObat = collect($detailResep)->map(function ($item) {
                         $harga  = $item['obat']['HARGA_JUAL'] ?? 0;
